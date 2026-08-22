@@ -1,5 +1,21 @@
 export type UserRole = 'buyer' | 'admin';
 
+export interface Product {
+  id: string;
+  sku: string;
+  name: string;
+  category: string;
+  description: string;
+  price: number;
+  unit: string;
+  stock: number;
+  minOrderQty: number;
+  leadTime: string;
+  isFeatured?: boolean;
+  specs?: Record<string, string>;
+  image?: string;
+}
+
 export interface UserProfile {
   companyName: string;
   taxId: string;
@@ -11,81 +27,60 @@ export interface UserProfile {
   role: UserRole;
 }
 
-export interface Product {
+export interface ClientItemDrop {
   id: string;
-  sku: string;
-  name: string;
-  category: string;
-  description: string;
-  price: number; // Base price per unit ($)
-  tierPrices?: { minQty: number; price: number }[];
-  unit: string;
-  stock: number;
-  minOrderQty: number;
-  leadTime: string;
-  isFeatured?: boolean;
-  specs: Record<string, string>;
-  image: string;
-}
-
-export interface RFQItem {
-  productId: string;
+  itemName: string;
   quantity: number;
-  targetPrice?: number;
-  notes?: string;
-  product?: Product;
+  unit: string;
+  specificRequirements?: string; // Brand, grade, dimensions, certs
 }
 
-export type RFQStatus = 'pending' | 'quoted' | 'accepted' | 'rejected';
-
-export interface RFQ {
+export interface QuoteLineItem {
   id: string;
-  rfqNumber: string;
+  itemName: string;
+  quantity: number;
+  unit: string;
+  unitPrice: number;
+  lineTotal: number;
+}
+
+export type RequestStatus = 'pending' | 'quoted' | 'accepted' | 'declined';
+
+export interface SupplyRequest {
+  id: string;
+  requestNumber: string;
   clientCompany: string;
   clientContact: string;
   email: string;
   phone: string;
-  items: RFQItem[];
-  status: RFQStatus;
+  items: ClientItemDrop[];
   targetDeliveryDate: string;
-  notes: string;
-  quoteAmount?: number;
-  quoteNotes?: string;
+  generalNotes?: string;
+  status: RequestStatus;
   createdAt: string;
+  // Admin Quote Response fields
+  quoteLineItems?: QuoteLineItem[];
+  totalQuoteAmount?: number;
+  freightTerms?: string;
+  adminNotes?: string;
+  quotedAt?: string;
 }
 
-export type OrderStatus = 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered';
-
-export interface OrderItem {
-  productId: string;
-  productName: string;
-  sku: string;
-  unitPrice: number;
-  quantity: number;
-  unit: string;
-}
+export type OrderStatus = 'confirmed' | 'processing' | 'shipped' | 'delivered';
 
 export interface Order {
   id: string;
   orderNumber: string;
+  requestId: string;
   clientCompany: string;
   clientContact: string;
   email: string;
-  items: OrderItem[];
+  items: QuoteLineItem[];
   totalAmount: number;
   status: OrderStatus;
   shippingAddress: string;
   poNumber: string;
   trackingNumber?: string;
-  invoiceNumber: string;
   createdAt: string;
-  updatedAt: string;
-}
-
-export interface SavedList {
-  id: string;
-  name: string;
-  description: string;
-  items: { productId: string; quantity: number }[];
   updatedAt: string;
 }

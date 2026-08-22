@@ -5,25 +5,16 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useApp } from '../context/app-context';
 import { 
-  Building2, 
   FileText, 
   ShoppingBag, 
   LayoutDashboard, 
-  Package, 
-  Layers, 
-  Bookmark, 
-  Settings, 
   Menu, 
-  X, 
-  PlusCircle, 
-  ShieldCheck, 
-  Clock,
-  Search
+  X
 } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
   const pathname = usePathname();
-  const { userRole, rfqCart, rfqs, orders } = useApp();
+  const { userRole, isAuthenticated, signOut, rfqCart, rfqs, orders } = useApp();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const cartItemCount = rfqCart.reduce((sum, item) => sum + item.quantity, 0);
@@ -64,15 +55,6 @@ export const Navbar: React.FC = () => {
             </Link>
 
             <Link
-              href="/products"
-              className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-colors ${
-                isActive('/products') ? 'bg-blue-50 text-blue-700' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-              }`}
-            >
-              Product Catalog
-            </Link>
-
-            <Link
               href="/about"
               className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-colors ${
                 isActive('/about') ? 'bg-blue-50 text-blue-700' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -108,15 +90,6 @@ export const Navbar: React.FC = () => {
                   )}
                 </Link>
 
-                <Link
-                  href="/saved-lists"
-                  className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
-                    isActive('/saved-lists') ? 'bg-blue-50 text-blue-700' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                  }`}
-                >
-                  <Bookmark className="w-4 h-4" />
-                  Reorder Lists
-                </Link>
               </>
             )}
 
@@ -124,20 +97,12 @@ export const Navbar: React.FC = () => {
               <div className="flex items-center gap-1 bg-amber-50 p-1 rounded-xl border border-amber-200 ml-2">
                 <span className="text-[11px] font-bold text-amber-800 uppercase px-2">Admin:</span>
                 <Link
-                  href="/admin/products"
-                  className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold ${
-                    isActive('/admin/products') ? 'bg-amber-600 text-white shadow-sm' : 'text-slate-700 hover:bg-amber-100'
-                  }`}
-                >
-                  Products
-                </Link>
-                <Link
                   href="/admin/quotes"
                   className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold relative ${
                     isActive('/admin/quotes') ? 'bg-amber-600 text-white shadow-sm' : 'text-slate-700 hover:bg-amber-100'
                   }`}
                 >
-                  RFQ Inbox
+                  Quote Inbox
                   {pendingRfqsCount > 0 && (
                     <span className="ml-1 bg-red-500 text-white text-[10px] px-1.5 py-0.2 rounded-full">
                       {pendingRfqsCount}
@@ -150,7 +115,7 @@ export const Navbar: React.FC = () => {
                     isActive('/admin/orders') ? 'bg-amber-600 text-white shadow-sm' : 'text-slate-700 hover:bg-amber-100'
                   }`}
                 >
-                  Fulfillment
+                  Orders
                 </Link>
               </div>
             )}
@@ -158,6 +123,18 @@ export const Navbar: React.FC = () => {
 
           {/* Action CTAs */}
           <div className="flex items-center gap-3">
+            {isAuthenticated ? (
+              <button
+                onClick={() => { signOut(); window.location.href = '/login'; }}
+                className="hidden sm:inline-flex rounded-lg px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+              >
+                Sign out
+              </button>
+            ) : (
+              <Link href="/login" className="hidden sm:inline-flex rounded-lg px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900">
+                Sign in
+              </Link>
+            )}
             {/* RFQ Builder Cart Button */}
             <Link
               href="/rfq"
@@ -195,13 +172,6 @@ export const Navbar: React.FC = () => {
             Home
           </Link>
           <Link
-            href="/products"
-            onClick={() => setMobileMenuOpen(false)}
-            className="block px-3 py-2 rounded-lg text-base font-medium text-slate-800 hover:bg-slate-50"
-          >
-            Product Catalog
-          </Link>
-          <Link
             href="/about"
             onClick={() => setMobileMenuOpen(false)}
             className="block px-3 py-2 rounded-lg text-base font-medium text-slate-800 hover:bg-slate-50"
@@ -222,36 +192,22 @@ export const Navbar: React.FC = () => {
           >
             Order History
           </Link>
-          <Link
-            href="/saved-lists"
-            onClick={() => setMobileMenuOpen(false)}
-            className="block px-3 py-2 rounded-lg text-base font-medium text-slate-800 hover:bg-slate-50"
-          >
-            Reorder Templates
-          </Link>
           {userRole === 'admin' && (
             <div className="pt-2 border-t border-slate-100 mt-2 space-y-1">
               <span className="text-xs font-bold text-amber-700 uppercase px-3">Admin Portal</span>
-              <Link
-                href="/admin/products"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block px-3 py-2 rounded-lg text-sm text-slate-700 hover:bg-amber-50"
-              >
-                Manage Products
-              </Link>
               <Link
                 href="/admin/quotes"
                 onClick={() => setMobileMenuOpen(false)}
                 className="block px-3 py-2 rounded-lg text-sm text-slate-700 hover:bg-amber-50"
               >
-                Review RFQs ({pendingRfqsCount})
+                Review Quotes ({pendingRfqsCount})
               </Link>
               <Link
                 href="/admin/orders"
                 onClick={() => setMobileMenuOpen(false)}
                 className="block px-3 py-2 rounded-lg text-sm text-slate-700 hover:bg-amber-50"
               >
-                Order Fulfillment
+                Order Queue
               </Link>
             </div>
           )}

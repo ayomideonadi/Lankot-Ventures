@@ -15,7 +15,7 @@ export const Footer: React.FC = () => {
             </div>
             <div>
               <h4 className="text-white font-semibold text-sm">Guaranteed Delivery SLA</h4>
-              <p className="text-slate-400 text-xs">Direct logistics fleet dispatch</p>
+              <p className="text-slate-400 text-xs">Clear fulfillment coordination</p>
             </div>
           </div>
 
@@ -25,7 +25,7 @@ export const Footer: React.FC = () => {
             </div>
             <div>
               <h4 className="text-white font-semibold text-sm">ISO Certified Quality</h4>
-              <p className="text-slate-400 text-xs">100% verified material specs</p>
+              <p className="text-slate-400 text-xs">Reviewed request details</p>
             </div>
           </div>
 
@@ -34,8 +34,8 @@ export const Footer: React.FC = () => {
               <Clock className="w-5 h-5" />
             </div>
             <div>
-              <h4 className="text-white font-semibold text-sm">Rapid RFQ Turnaround</h4>
-              <p className="text-slate-400 text-xs">Quotes issued within 4 hours</p>
+              <h4 className="text-white font-semibold text-sm">Rapid quote review</h4>
+              <p className="text-slate-400 text-xs">Quotes prepared after review</p>
             </div>
           </div>
 
@@ -63,46 +63,46 @@ export const Footer: React.FC = () => {
               Empowering enterprise procurement with modern digital order management, transparent contract pricing, and dependable supply chain execution.
             </p>
             <div className="text-xs text-slate-400 space-y-1">
-              <p className="flex items-center gap-2"><MapPin className="w-3.5 h-3.5 text-blue-400" /> Chicago HQ: 450 Industrial Pkwy</p>
+              <p className="flex items-center gap-2"><MapPin className="w-3.5 h-3.5 text-blue-400" /> Chicago HQ: 450 Commerce Pkwy</p>
               <p className="flex items-center gap-2"><Phone className="w-3.5 h-3.5 text-blue-400" /> Sales: +1 (800) 555-LANKOT</p>
               <p className="flex items-center gap-2"><Mail className="w-3.5 h-3.5 text-blue-400" /> quotes@lankotventures.com</p>
             </div>
           </div>
 
           <div>
-            <h5 className="text-white font-semibold text-sm mb-3">Product Catalog</h5>
+            <h5 className="text-white font-semibold text-sm mb-3">Request Workflow</h5>
             <ul className="space-y-2 text-xs text-slate-400">
-              <li><Link href="/products?category=Construction+Materials" className="hover:text-white transition-colors">Construction & Structural Steel</Link></li>
-              <li><Link href="/products?category=Electrical+%26+Automation" className="hover:text-white transition-colors">Electrical & Power Switchgear</Link></li>
-              <li><Link href="/products?category=Safety+%26+PPE" className="hover:text-white transition-colors">Safety PPE & Site Gear</Link></li>
-              <li><Link href="/products?category=Facility+%26+Maintenance" className="hover:text-white transition-colors">Facility & Chemical Cleaning</Link></li>
+              <li><Link href="/rfq" className="hover:text-white transition-colors">Submit a request</Link></li>
+              <li><Link href="/dashboard" className="hover:text-white transition-colors">Client dashboard</Link></li>
+              <li><Link href="/orders" className="hover:text-white transition-colors">Order tracking</Link></li>
+              <li><Link href="/contact" className="hover:text-white transition-colors">Support desk</Link></li>
             </ul>
           </div>
 
           <div>
             <h5 className="text-white font-semibold text-sm mb-3">Client Services</h5>
             <ul className="space-y-2 text-xs text-slate-400">
-              <li><Link href="/rfq" className="hover:text-white transition-colors">Multi-Item RFQ Builder</Link></li>
+              <li><Link href="/rfq" className="hover:text-white transition-colors">Request builder</Link></li>
               <li><Link href="/dashboard" className="hover:text-white transition-colors">Client Portal Dashboard</Link></li>
               <li><Link href="/orders" className="hover:text-white transition-colors">Order Tracking & History</Link></li>
-              <li><Link href="/saved-lists" className="hover:text-white transition-colors">Reorder Templates</Link></li>
+              <li><Link href="/rfq" className="hover:text-white transition-colors">Request intake</Link></li>
             </ul>
           </div>
 
           <div>
             <h5 className="text-white font-semibold text-sm mb-3">Corporate & Legal</h5>
             <ul className="space-y-2 text-xs text-slate-400">
-              <li><Link href="/about" className="hover:text-white transition-colors">About Lankot Ventures</Link></li>
-              <li><Link href="/contact" className="hover:text-white transition-colors">Contact Sales Team</Link></li>
-              <li><span className="hover:text-white cursor-pointer">Quality Assurance Policy</span></li>
-              <li><span className="hover:text-white cursor-pointer">Supplier Code of Conduct</span></li>
+              <li><Link href="/about" className="hover:text-white transition-colors">About Lankot</Link></li>
+              <li><Link href="/contact" className="hover:text-white transition-colors">Contact support</Link></li>
+              <li><span className="hover:text-white cursor-pointer">Request policy</span></li>
+              <li><span className="hover:text-white cursor-pointer">Buyer terms</span></li>
             </ul>
           </div>
         </div>
 
         <div className="pt-6 border-t border-slate-800 flex flex-col md:flex-row items-center justify-between text-xs text-slate-500 gap-4">
-          <p>© 2026 Lankot Ventures B2B Supply Platform. All rights reserved.</p>
-          <p>Built for Corporate Procurement & Operations Teams.</p>
+          <p>© 2026 Lankot B2B Request Platform. All rights reserved.</p>
+          <p>Built for request-driven procurement teams.</p>
         </div>
 
       </div>
