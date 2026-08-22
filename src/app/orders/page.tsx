@@ -12,10 +12,11 @@ export default function OrdersPage() {
   const [statusFilter, setStatusFilter] = useState<string>('All');
 
   const filteredOrders = orders.filter(o => {
+    const invoiceValue = o.invoiceNumber?.toLowerCase() ?? '';
     const matchesSearch = 
       o.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
       o.poNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      o.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase());
+      invoiceValue.includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'All' || o.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -98,7 +99,7 @@ export default function OrdersPage() {
                   {getStatusBadge(ord.status)}
                 </div>
                 <p className="text-xs text-slate-400 mt-1">
-                  PO #: <span className="font-semibold text-slate-700">{ord.poNumber}</span> • Invoice: <span className="font-semibold text-slate-700">{ord.invoiceNumber}</span> • Placed: {ord.createdAt}
+                  PO #: <span className="font-semibold text-slate-700">{ord.poNumber}</span> • Invoice: <span className="font-semibold text-slate-700">{ord.invoiceNumber ?? '—'}</span> • Placed: {ord.createdAt}
                 </p>
               </div>
 

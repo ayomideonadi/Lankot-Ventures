@@ -38,6 +38,7 @@ export interface ClientItemDrop {
 export interface QuoteLineItem {
   id: string;
   itemName: string;
+  productName?: string;
   quantity: number;
   unit: string;
   unitPrice: number;
@@ -66,7 +67,7 @@ export interface SupplyRequest {
   quotedAt?: string;
 }
 
-export type OrderStatus = 'confirmed' | 'processing' | 'shipped' | 'delivered';
+export type OrderStatus = 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered';
 
 export interface Order {
   id: string;
@@ -80,6 +81,7 @@ export interface Order {
   status: OrderStatus;
   shippingAddress: string;
   poNumber: string;
+  invoiceNumber?: string;
   trackingNumber?: string;
   createdAt: string;
   updatedAt: string;

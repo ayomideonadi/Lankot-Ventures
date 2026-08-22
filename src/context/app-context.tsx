@@ -175,6 +175,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           return {
             id: item.id,
             itemName: item.itemName,
+            productName: item.itemName,
             quantity: item.quantity,
             unit: item.unit,
             unitPrice: price,
@@ -232,11 +233,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       clientCompany: req.clientCompany,
       clientContact: req.clientContact,
       email: req.email,
-      items: req.quoteLineItems,
+      items: req.quoteLineItems.map((item) => ({
+        ...item,
+        productName: item.productName || item.itemName
+      })),
       totalAmount: req.totalQuoteAmount || 0,
       status: 'confirmed',
       shippingAddress: shippingAddress || userProfile.address,
       poNumber: poNumber || `PO-APX-${Math.floor(1000 + Math.random() * 9000)}`,
+      invoiceNumber: `INV-${Math.floor(10000 + Math.random() * 90000)}`,
       createdAt: new Date().toISOString().split('T')[0],
       updatedAt: new Date().toISOString().split('T')[0]
     };
@@ -334,14 +339,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const placeQuickOrder = (items: { productId: string; quantity: number }[], poNumber: string, shippingAddress: string): Order => {
-    const itemRows: QuoteLineItem[] = items.map((item) => ({
-      id: item.productId,
-      itemName: products.find((p) => p.id === item.productId)?.name || `Item ${item.productId}`,
-      quantity: item.quantity,
-      unit: products.find((p) => p.id === item.productId)?.unit || 'Units',
-      unitPrice: products.find((p) => p.id === item.productId)?.price || 0,
-      lineTotal: (products.find((p) => p.id === item.productId)?.price || 0) * item.quantity
-    }));
+    const itemRows: QuoteLineItem[] = items.map((item) => {
+      const product = products.find((p) => p.id === item.productId);
+      return {
+        id: item.productId,
+        itemName: product?.name || `Item ${item.productId}`,
+        productName: product?.name || `Item ${item.productId}`,
+        quantity: item.quantity,
+        unit: product?.unit || 'Units',
+        unitPrice: product?.price || 0,
+        lineTotal: (product?.price || 0) * item.quantity
+      };
+    });
 
     const order: Order = {
       id: `ord-${Date.now()}`,
@@ -355,6 +364,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       status: 'confirmed',
       shippingAddress,
       poNumber: poNumber || `PO-${Math.floor(1000 + Math.random() * 9000)}`,
+      invoiceNumber: `INV-${Math.floor(10000 + Math.random() * 90000)}`,
       createdAt: new Date().toISOString().split('T')[0],
       updatedAt: new Date().toISOString().split('T')[0]
     };

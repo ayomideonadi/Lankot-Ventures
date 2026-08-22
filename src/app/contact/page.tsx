@@ -45,7 +45,7 @@ export default function ContactPage() {
                 <Phone className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
                 <div>
                   <h4 className="font-semibold text-white">Phone</h4>
-                  <p className="text-xs text-slate-400 mt-0.5">+1 (800) 555-5265</p>
+                  <p className="text-xs text-slate-400 mt-0.5">+234 805 521 1085</p>
                 </div>
               </div>
 
@@ -61,7 +61,7 @@ export default function ContactPage() {
                 <Clock className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
                 <div>
                   <h4 className="font-semibold text-white">Hours</h4>
-                  <p className="text-xs text-slate-400 mt-0.5">Monday - Friday: 8:00 AM - 6:00 PM</p>
+                  <p className="text-xs text-slate-400 mt-0.5">Monday - Saturday: 8:00 AM - 6:00 PM</p>
                 </div>
               </div>
             </div>

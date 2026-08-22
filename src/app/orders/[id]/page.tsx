@@ -72,7 +72,7 @@ export default function OrderDetailPage() {
             </h1>
           </div>
           <p className="text-xs text-slate-400 mt-1">
-            PO #: <span className="font-semibold text-slate-700">{order.poNumber}</span> • Invoice: <span className="font-semibold text-slate-700">{order.invoiceNumber}</span>
+            PO #: <span className="font-semibold text-slate-700">{order.poNumber}</span> • Invoice: <span className="font-semibold text-slate-700">{order.invoiceNumber ?? '—'}</span>
           </p>
         </div>
 
@@ -153,7 +153,7 @@ export default function OrderDetailPage() {
                 {order.items.map((item, idx) => (
                   <tr key={idx}>
                     <td className="p-3 font-bold text-slate-900">{item.itemName}</td>
-                    <td className="p-3 font-medium text-slate-800">{item.productName}</td>
+                    <td className="p-3 font-medium text-slate-800">{item.productName ?? item.itemName}</td>
                     <td className="p-3 font-bold text-slate-900">{item.quantity} {item.unit}</td>
                     <td className="p-3 text-slate-600">{formatNaira(item.unitPrice)}</td>
                     <td className="p-3 text-right font-bold text-slate-900">{formatNaira(item.quantity * item.unitPrice)}</td>
