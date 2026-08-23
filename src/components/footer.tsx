@@ -63,9 +63,9 @@ export const Footer: React.FC = () => {
               Empowering enterprise procurement with modern digital order management, transparent contract pricing, and dependable supply chain execution.
             </p>
             <div className="text-xs text-slate-400 space-y-1">
-              <p className="flex items-center gap-2"><MapPin className="w-3.5 h-3.5 text-blue-400" /> Chicago HQ: 450 Commerce Pkwy</p>
-              <p className="flex items-center gap-2"><Phone className="w-3.5 h-3.5 text-blue-400" /> Sales: +1 (800) 555-LANKOT</p>
-              <p className="flex items-center gap-2"><Mail className="w-3.5 h-3.5 text-blue-400" /> quotes@lankotventures.com</p>
+              <p className="flex items-center gap-2"><MapPin className="w-3.5 h-3.5 text-blue-400" /> Lagos, Nigeria</p>
+              <p className="flex items-center gap-2"><Phone className="w-3.5 h-3.5 text-blue-400" /> Sales: +234 805 521 1085-LANKOT</p>
+              <p className="flex items-center gap-2"><Mail className="w-3.5 h-3.5 text-blue-400" /> lankotventures01@gmail.com</p>
             </div>
           </div>
 

@@ -4,21 +4,29 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useApp } from '@/context/app-context';
-import { Building2, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { Building2, ShieldCheck, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 
 export default function RegisterPage() {
   const router = useRouter();
   const { registerAccount } = useApp();
   const [registered, setRegistered] = useState(false);
-  const [form, setForm] = useState({ companyName: '', taxId: '', industry: 'Business Operations', contactPerson: '', email: '' });
+  const [confirmationRequired, setConfirmationRequired] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [form, setForm] = useState({ companyName: '', taxId: '', industry: 'Business Operations', contactPerson: '', email: '', password: '' });
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    registerAccount(form);
+    const result = await registerAccount(form, form.password);
+    if (!result.success) {
+      setError(result.error || 'Unable to create account.');
+      return;
+    }
+    setConfirmationRequired(Boolean(result.requiresConfirmation));
     setRegistered(true);
-    setTimeout(() => {
-      router.push('/dashboard');
-    }, 1500);
+    if (!result.requiresConfirmation) {
+      setTimeout(() => router.push('/dashboard'), 1500);
+    }
   };
 
   return (
@@ -38,7 +46,9 @@ export default function RegisterPage() {
               <CheckCircle2 className="w-6 h-6" />
             </div>
             <h3 className="text-lg font-bold text-slate-900">Company Onboarded!</h3>
-            <p className="text-xs text-slate-500">Redirecting to your new Client Portal Dashboard...</p>
+            <p className="text-xs text-slate-500">
+              {confirmationRequired ? 'Check your email to confirm your account before signing in.' : 'Redirecting to your new Client Portal Dashboard...'}
+            </p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -55,19 +65,7 @@ export default function RegisterPage() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700 uppercase">Federal Tax ID / EIN</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Business registration number"
-                  value={form.taxId}
-                  onChange={(e) => setForm({ ...form, taxId: e.target.value })}
-                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div className="space-y-1">
+              <div className="space-y-1 sm:col-span-2">
                 <label className="text-xs font-bold text-slate-700 uppercase">Primary Industry</label>
                 <select className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500">
                   <option>Business Operations</option>
@@ -78,6 +76,31 @@ export default function RegisterPage() {
                 </select>
               </div>
             </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-700 uppercase">Password</label>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  minLength={6}
+                  value={form.password}
+                  onChange={(e) => setForm({ ...form, password: e.target.value })}
+                  className="w-full p-3 pr-11 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <button
+                  type="button"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  title={showPassword ? 'Hide password' : 'Show password'}
+                  onClick={() => setShowPassword((visible) => !visible)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-900"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            {error && <p role="alert" className="text-xs font-medium text-red-600">{error}</p>}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1">

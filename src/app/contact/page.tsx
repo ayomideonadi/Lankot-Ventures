@@ -53,7 +53,7 @@ export default function ContactPage() {
                 <Mail className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
                 <div>
                   <h4 className="font-semibold text-white">Email</h4>
-                  <p className="text-xs text-slate-400 mt-0.5">support@lankot.com</p>
+                  <p className="text-xs text-slate-400 mt-0.5">lankotventures01@gmail.com</p>
                 </div>
               </div>
 

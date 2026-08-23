@@ -4,19 +4,21 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useApp } from '@/context/app-context';
-import { Building2, Lock, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Building2, Lock, ArrowRight, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
   const { signIn } = useApp();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
 
-  const handleLogin = (e: React.FormEvent, role: 'buyer' | 'admin') => {
+  const handleLogin = async (e: React.FormEvent, role: 'buyer' | 'admin') => {
     e.preventDefault();
-    if (!signIn(email, password, role)) {
-      setError('Enter a valid email and a password with at least 6 characters.');
+    const result = await signIn(email, password, role);
+    if (!result.success) {
+      setError(result.error || 'Unable to sign in.');
       return;
     }
     router.push(role === 'buyer' ? '/dashboard' : '/admin/quotes');
@@ -47,13 +49,24 @@ export default function LoginPage() {
 
           <div className="space-y-1">
             <label className="text-xs font-bold text-slate-700 uppercase">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="w-full p-3 pr-11 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <button
+                type="button"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                title={showPassword ? 'Hide password' : 'Show password'}
+                onClick={() => setShowPassword((visible) => !visible)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-900"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
 
           <button

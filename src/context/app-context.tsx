@@ -3,6 +3,9 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { SupplyRequest, Order, UserRole, UserProfile, ClientItemDrop, QuoteLineItem, OrderStatus, Product } from '../types/b2b';
 import { INITIAL_REQUESTS, INITIAL_ORDERS, INITIAL_USER } from '../data/mock-data';
+import { supabase } from '@/lib/supabase';
+
+const adminEmail = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'lankotventures01@gmail.com').trim().toLowerCase();
 
 interface LegacySavedList {
   id: string;
@@ -25,9 +28,9 @@ interface AppContextType {
   userRole: UserRole;
   userProfile: UserProfile;
   setUserRole: (role: UserRole) => void;
-  signIn: (email: string, password: string, role: UserRole) => boolean;
-  signOut: () => void;
-  registerAccount: (profile: Pick<UserProfile, 'companyName' | 'taxId' | 'industry' | 'contactPerson' | 'email'>) => void;
+  signIn: (email: string, password: string, role: UserRole) => Promise<{ success: boolean; error?: string }>;
+  signOut: () => Promise<void>;
+  registerAccount: (profile: Pick<UserProfile, 'companyName' | 'taxId' | 'industry' | 'contactPerson' | 'email'>, password: string) => Promise<{ success: boolean; error?: string; requiresConfirmation?: boolean }>;
   supplyRequests: SupplyRequest[];
   rfqs: SupplyRequest[];
   orders: Order[];
@@ -67,62 +70,97 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const rfqs = supplyRequests;
   const storageVersion = '2';
 
-  // Sync with LocalStorage
   useEffect(() => {
-    try {
-      if (localStorage.getItem('lankot_data_version') !== storageVersion) {
+    const loadSession = async () => {
+      try {
+        if (!supabase) return;
+        const { data: { session } } = await supabase.auth.getSession();
+        const metadata = session?.user.user_metadata as Partial<UserProfile> | undefined;
+        if (session?.user) {
+          setIsAuthenticated(true);
+          const sessionEmail = session.user.email?.toLowerCase();
+          const sessionRole = sessionEmail === adminEmail ? 'admin' : 'buyer';
+          setUserRoleState(sessionRole);
+          if (metadata?.companyName && metadata?.contactPerson) {
+            setUserProfile({ ...INITIAL_USER, ...metadata, email: session.user.email || metadata.email || '' } as UserProfile);
+          }
+        }
+        if (localStorage.getItem('lankot_data_version') !== storageVersion) {
         localStorage.removeItem('lankot_supply_requests');
         localStorage.removeItem('lankot_orders');
         localStorage.setItem('lankot_data_version', storageVersion);
       }
-      const savedRole = localStorage.getItem('lankot_role');
-      if (savedRole === 'buyer' || savedRole === 'admin') setUserRoleState(savedRole);
-      const savedProfile = localStorage.getItem('lankot_user_profile');
-      if (savedProfile) setUserProfile(JSON.parse(savedProfile));
-      setIsAuthenticated(localStorage.getItem('lankot_session') === 'active');
+        const savedProfile = localStorage.getItem('lankot_user_profile');
+        if (savedProfile) setUserProfile(JSON.parse(savedProfile));
 
-      const savedRequests = localStorage.getItem('lankot_supply_requests');
-      if (savedRequests) setSupplyRequests(JSON.parse(savedRequests));
+        const savedRequests = localStorage.getItem('lankot_supply_requests');
+        if (savedRequests) setSupplyRequests(JSON.parse(savedRequests));
 
-      const savedOrders = localStorage.getItem('lankot_orders');
-      if (savedOrders) setOrders(JSON.parse(savedOrders));
-    } catch (e) {
-      console.error('Failed to load storage:', e);
-    }
+        const savedOrders = localStorage.getItem('lankot_orders');
+        if (savedOrders) setOrders(JSON.parse(savedOrders));
+      } catch (error) {
+        console.error('Failed to load authentication and storage state:', error);
+      }
+    };
+
+    void loadSession();
+    if (!supabase) return;
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAuthenticated(Boolean(session));
+    });
+    return () => subscription.unsubscribe();
   }, []);
 
   const setUserRole = (role: UserRole) => {
+    if (role === 'admin') return;
     setUserRoleState(role);
     localStorage.setItem('lankot_role', role);
   };
 
-  const signIn = (email: string, password: string, role: UserRole) => {
-    if (!email.trim() || password.length < 6) return false;
-    setUserRoleState(role);
-    setIsAuthenticated(true);
-    localStorage.setItem('lankot_role', role);
-    localStorage.setItem('lankot_session', 'active');
-    return true;
+  const signIn = async (email: string, password: string, role: UserRole) => {
+    if (!email.trim() || password.length < 6) return { success: false, error: 'Enter a valid email and a password with at least 6 characters.' };
+    if (!supabase) return { success: false, error: 'Authentication is not configured. Add the Supabase environment variables.' };
+    if (role === 'admin' && email.trim().toLowerCase() !== adminEmail) {
+      return { success: false, error: 'This email is not authorized for admin access.' };
+    }
+    const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+    if (error) return { success: false, error: error.message };
+    const accountRole = role === 'admin' ? 'admin' : 'buyer';
+    if (role === 'admin' && accountRole !== 'admin') {
+      await supabase.auth.signOut();
+      return { success: false, error: 'This account is not authorized for admin access.' };
+    }
+    setUserRoleState(accountRole);
+    setIsAuthenticated(Boolean(data.session));
+    return { success: true, requiresConfirmation: !data.session };
   };
 
-  const signOut = () => {
+  const signOut = async () => {
+    if (!supabase) return;
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
     setIsAuthenticated(false);
-    localStorage.removeItem('lankot_session');
-    localStorage.removeItem('lankot_role');
+    setUserRoleState('buyer');
   };
 
-  const registerAccount = (profile: Pick<UserProfile, 'companyName' | 'taxId' | 'industry' | 'contactPerson' | 'email'>) => {
+  const registerAccount = async (profile: Pick<UserProfile, 'companyName' | 'taxId' | 'industry' | 'contactPerson' | 'email'>, password: string) => {
+    if (password.length < 6) return { success: false, error: 'Password must contain at least 6 characters.' };
+    if (!supabase) return { success: false, error: 'Authentication is not configured. Add the Supabase environment variables.' };
     const updatedProfile: UserProfile = {
       ...userProfile,
       ...profile,
       role: 'buyer'
     };
+    const { data, error } = await supabase.auth.signUp({
+      email: profile.email.trim(),
+      password,
+      options: { data: updatedProfile }
+    });
+    if (error) return { success: false, error: error.message };
     setUserProfile(updatedProfile);
     setUserRoleState('buyer');
-    setIsAuthenticated(true);
-    localStorage.setItem('lankot_user_profile', JSON.stringify(updatedProfile));
-    localStorage.setItem('lankot_role', 'buyer');
-    localStorage.setItem('lankot_session', 'active');
+    setIsAuthenticated(Boolean(data.session));
+    return { success: true };
   };
 
   const submitSupplyRequest = (
