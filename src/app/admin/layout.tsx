@@ -6,12 +6,12 @@ import { useApp } from '@/context/app-context';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const { isAuthenticated, userRole } = useApp();
+  const { isAuthenticated, authReady, userRole } = useApp();
 
   useEffect(() => {
-    if (!isAuthenticated || userRole !== 'admin') router.replace('/login');
-  }, [isAuthenticated, router, userRole]);
+    if (authReady && (!isAuthenticated || userRole !== 'admin')) router.replace('/login');
+  }, [authReady, isAuthenticated, router, userRole]);
 
-  if (!isAuthenticated || userRole !== 'admin') return null;
+  if (!authReady || !isAuthenticated || userRole !== 'admin') return null;
   return children;
 }

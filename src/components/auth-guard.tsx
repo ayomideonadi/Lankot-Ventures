@@ -9,13 +9,13 @@ const protectedPaths = ['/dashboard', '/orders', '/rfq', '/saved-lists'];
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { isAuthenticated } = useApp();
+  const { isAuthenticated, authReady } = useApp();
   const requiresAuth = protectedPaths.some((path) => pathname === path || pathname.startsWith(`${path}/`));
 
   useEffect(() => {
-    if (requiresAuth && !isAuthenticated) router.replace('/login');
-  }, [isAuthenticated, requiresAuth, router]);
+    if (authReady && requiresAuth && !isAuthenticated) router.replace('/login');
+  }, [authReady, isAuthenticated, requiresAuth, router]);
 
-  if (requiresAuth && !isAuthenticated) return null;
+  if (requiresAuth && (!authReady || !isAuthenticated)) return null;
   return children;
 }

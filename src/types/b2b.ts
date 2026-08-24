@@ -86,3 +86,15 @@ export interface Order {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface Notification {
+  id: string;
+  recipient_email: string;
+  type: 'order_created' | 'order_status';
+  title: string;
+  message: string;
+  order_id: string | null;
+  payload: Record<string, unknown>;
+  read_at: string | null;
+  created_at: string;
+}

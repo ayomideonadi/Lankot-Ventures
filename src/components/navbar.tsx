@@ -9,17 +9,20 @@ import {
   ShoppingBag, 
   LayoutDashboard, 
   Menu, 
-  X
+  X,
+  Bell
 } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
   const pathname = usePathname();
-  const { userRole, isAuthenticated, signOut, rfqCart, rfqs, orders } = useApp();
+  const { userRole, isAuthenticated, signOut, rfqCart, rfqs, orders, notifications, markNotificationRead } = useApp();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
 
   const cartItemCount = rfqCart.reduce((sum, item) => sum + item.quantity, 0);
   const pendingRfqsCount = rfqs.filter(r => r.status === 'pending').length;
   const activeOrdersCount = orders.filter(o => o.status !== 'delivered').length;
+  const unreadNotifications = notifications.filter((notification) => !notification.read_at);
 
   const isActive = (path: string) => pathname === path;
 
@@ -123,6 +126,47 @@ export const Navbar: React.FC = () => {
 
           {/* Action CTAs */}
           <div className="flex items-center gap-3">
+            {isAuthenticated && (
+              <div className="relative">
+                <button
+                  type="button"
+                  aria-label="View notifications"
+                  title="View notifications"
+                  onClick={() => setNotificationsOpen((open) => !open)}
+                  className="relative p-2 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                >
+                  <Bell className="w-5 h-5" />
+                  {unreadNotifications.length > 0 && (
+                    <span className="absolute -right-0.5 -top-0.5 min-w-4 h-4 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+                      {unreadNotifications.length > 9 ? '9+' : unreadNotifications.length}
+                    </span>
+                  )}
+                </button>
+                {notificationsOpen && (
+                  <div className="absolute right-0 top-11 z-50 w-80 max-w-[calc(100vw-2rem)] bg-white border border-slate-200 rounded-2xl shadow-xl p-3">
+                    <div className="flex items-center justify-between px-2 pb-2 border-b border-slate-100">
+                      <span className="font-bold text-sm text-slate-900">Notifications</span>
+                      <span className="text-[11px] text-slate-500">{unreadNotifications.length} unread</span>
+                    </div>
+                    <div className="max-h-72 overflow-y-auto divide-y divide-slate-100">
+                      {notifications.length === 0 ? (
+                        <p className="px-2 py-5 text-xs text-slate-500">No notifications yet.</p>
+                      ) : notifications.slice(0, 8).map((notification) => (
+                        <button
+                          key={notification.id}
+                          type="button"
+                          onClick={() => markNotificationRead(notification.id)}
+                          className={`w-full text-left px-2 py-3 ${notification.read_at ? 'opacity-60' : ''}`}
+                        >
+                          <span className="block text-xs font-bold text-slate-900">{notification.title}</span>
+                          <span className="block text-[11px] text-slate-600 mt-0.5">{notification.message}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
             {isAuthenticated ? (
               <button
                 onClick={() => { signOut(); window.location.href = '/login'; }}

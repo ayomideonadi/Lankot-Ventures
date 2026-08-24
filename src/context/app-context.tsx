@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { SupplyRequest, Order, UserRole, UserProfile, ClientItemDrop, QuoteLineItem, OrderStatus, Product } from '../types/b2b';
+import { SupplyRequest, Order, UserRole, UserProfile, ClientItemDrop, QuoteLineItem, OrderStatus, Product, Notification } from '../types/b2b';
 import { INITIAL_REQUESTS, INITIAL_ORDERS, INITIAL_USER } from '../data/mock-data';
 import { supabase } from '@/lib/supabase';
 
@@ -25,6 +25,7 @@ interface LegacyRFQCartItem {
 
 interface AppContextType {
   isAuthenticated: boolean;
+  authReady: boolean;
   userRole: UserRole;
   userProfile: UserProfile;
   setUserRole: (role: UserRole) => void;
@@ -34,6 +35,7 @@ interface AppContextType {
   supplyRequests: SupplyRequest[];
   rfqs: SupplyRequest[];
   orders: Order[];
+  notifications: Notification[];
   products: Product[];
   rfqCart: LegacyRFQCartItem[];
   savedLists: LegacySavedList[];
@@ -45,6 +47,7 @@ interface AppContextType {
   acceptQuoteAndOrder: (requestId: string, poNumber: string, shippingAddress: string) => Order;
   removeOrder: (orderId: string) => void;
   updateOrderStatus: (orderId: string, status: OrderStatus, trackingNumber?: string) => void;
+  markNotificationRead: (notificationId: string) => void;
   addToRFQCart: (productId: string, quantity: number) => void;
   removeFromRFQCart: (productId: string) => void;
   updateRFQCartQuantity: (productId: string, quantity: number) => void;
@@ -62,27 +65,53 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [userRole, setUserRoleState] = useState<UserRole>('buyer');
   const [userProfile, setUserProfile] = useState<UserProfile>(INITIAL_USER);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authReady, setAuthReady] = useState(false);
   const [supplyRequests, setSupplyRequests] = useState<SupplyRequest[]>(INITIAL_REQUESTS);
   const [orders, setOrders] = useState<Order[]>(INITIAL_ORDERS);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [products] = useState<Product[]>([]);
   const [rfqCart, setRfqCart] = useState<LegacyRFQCartItem[]>([]);
   const [savedLists] = useState<LegacySavedList[]>([]);
   const rfqs = supplyRequests;
   const storageVersion = '2';
 
+  const applyNotification = (notification: Notification) => {
+    setNotifications((current) => current.some((item) => item.id === notification.id) ? current : [notification, ...current]);
+    const payload = notification.payload as Partial<Order> & { status?: OrderStatus; trackingNumber?: string };
+    if (notification.type === 'order_created' && payload.id) {
+      setOrders((current) => current.some((order) => order.id === payload.id) ? current : [payload as Order, ...current]);
+    }
+    if (notification.type === 'order_status' && notification.order_id) {
+      setOrders((current) => current.map((order) => order.id === notification.order_id
+        ? { ...order, status: payload.status || order.status, ...(payload.trackingNumber !== undefined && { trackingNumber: payload.trackingNumber }), updatedAt: new Date().toISOString().split('T')[0] }
+        : order));
+    }
+  };
+
+  const sendNotification = async (notification: Omit<Notification, 'id' | 'read_at' | 'created_at'>) => {
+    if (!supabase) return;
+    const { error } = await supabase.from('notifications').insert(notification);
+    if (error) console.error('Failed to send notification:', error);
+  };
+
   useEffect(() => {
     const loadSession = async () => {
       try {
-        if (!supabase) return;
-        const { data: { session } } = await supabase.auth.getSession();
-        const metadata = session?.user.user_metadata as Partial<UserProfile> | undefined;
-        if (session?.user) {
-          setIsAuthenticated(true);
-          const sessionEmail = session.user.email?.toLowerCase();
-          const sessionRole = sessionEmail === adminEmail ? 'admin' : 'buyer';
-          setUserRoleState(sessionRole);
-          if (metadata?.companyName && metadata?.contactPerson) {
-            setUserProfile({ ...INITIAL_USER, ...metadata, email: session.user.email || metadata.email || '' } as UserProfile);
+        if (supabase) {
+          const { data: { session } } = await supabase.auth.getSession();
+          const metadata = session?.user.user_metadata as Partial<UserProfile> | undefined;
+          if (session?.user) {
+            setIsAuthenticated(true);
+            const sessionEmail = session.user.email?.toLowerCase();
+            const sessionRole = sessionEmail === adminEmail ? 'admin' : 'buyer';
+            setUserRoleState(sessionRole);
+            if (metadata?.companyName && metadata?.contactPerson) {
+              setUserProfile({ ...INITIAL_USER, ...metadata, email: session.user.email || metadata.email || '' } as UserProfile);
+            }
+          }
+          if (session?.user.email) {
+            const { data: existingNotifications } = await supabase.from('notifications').select('*').eq('recipient_email', session.user.email).order('created_at', { ascending: false }).limit(30);
+            existingNotifications?.forEach((notification) => applyNotification(notification as Notification));
           }
         }
         if (localStorage.getItem('lankot_data_version') !== storageVersion) {
@@ -100,6 +129,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (savedOrders) setOrders(JSON.parse(savedOrders));
       } catch (error) {
         console.error('Failed to load authentication and storage state:', error);
+      } finally {
+        setAuthReady(true);
       }
     };
 
@@ -108,7 +139,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setIsAuthenticated(Boolean(session));
     });
-    return () => subscription.unsubscribe();
+    const channel = supabase.channel('notifications-live').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, (payload) => {
+      applyNotification(payload.new as Notification);
+    }).subscribe();
+    return () => { subscription.unsubscribe(); void supabase.removeChannel(channel); };
   }, []);
 
   const setUserRole = (role: UserRole) => {
@@ -294,6 +328,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const updatedOrders = [newOrder, ...orders];
     setOrders(updatedOrders);
     localStorage.setItem('lankot_orders', JSON.stringify(updatedOrders));
+    void sendNotification({
+      recipient_email: adminEmail,
+      type: 'order_created',
+      title: 'New client order received',
+      message: `${newOrder.clientCompany} placed order ${newOrder.orderNumber}.`,
+      order_id: newOrder.id,
+      payload: newOrder as unknown as Record<string, unknown>
+    });
 
     return newOrder;
   };
@@ -312,6 +354,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
     setOrders(updated);
     localStorage.setItem('lankot_orders', JSON.stringify(updated));
+    const changedOrder = updated.find((order) => order.id === orderId);
+    if (changedOrder) {
+      void sendNotification({
+        recipient_email: changedOrder.email,
+        type: 'order_status',
+        title: `Order ${changedOrder.orderNumber} updated`,
+        message: `Your order is now ${status}.`,
+        order_id: changedOrder.id,
+        payload: { status, trackingNumber }
+      });
+    }
+  };
+
+  const markNotificationRead = (notificationId: string) => {
+    setNotifications((current) => current.map((notification) => notification.id === notificationId ? { ...notification, read_at: new Date().toISOString() } : notification));
+    void supabase?.from('notifications').update({ read_at: new Date().toISOString() }).eq('id', notificationId);
   };
 
   const removeOrder = (orderId: string) => {
@@ -410,6 +468,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const updatedOrders = [order, ...orders];
     setOrders(updatedOrders);
     localStorage.setItem('lankot_orders', JSON.stringify(updatedOrders));
+    void sendNotification({
+      recipient_email: adminEmail,
+      type: 'order_created',
+      title: 'New client order received',
+      message: `${order.clientCompany} placed order ${order.orderNumber}.`,
+      order_id: order.id,
+      payload: order as unknown as Record<string, unknown>
+    });
     return order;
   };
 
@@ -427,6 +493,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     <AppContext.Provider
       value={{
         isAuthenticated,
+        authReady,
         userRole,
         userProfile,
         setUserRole,
@@ -436,6 +503,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         supplyRequests,
         rfqs,
         orders,
+        notifications,
         products,
         rfqCart,
         savedLists,
@@ -446,6 +514,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         acceptQuoteAndOrder,
         removeOrder,
         updateOrderStatus,
+        markNotificationRead,
         addToRFQCart,
         addCustomToRFQCart,
         removeFromRFQCart,
