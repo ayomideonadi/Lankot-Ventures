@@ -17,7 +17,7 @@ export default function AdminOrdersPage() {
     else if (currentStatus === 'shipped') nextStatus = 'delivered';
     else return;
 
-    const trackingNum = nextStatus === 'shipped' ? `LNK-TRK-${Math.floor(100000 + Math.random() * 900000)}-CH` : undefined;
+    const trackingNum = nextStatus === 'shipped' ? `LNK-TRK-${orderId.replace(/[^a-zA-Z0-9]/g, '').slice(-8).toUpperCase()}-CH` : undefined;
     updateOrderStatus(orderId, nextStatus, trackingNum);
   };
 

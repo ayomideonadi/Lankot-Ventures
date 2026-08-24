@@ -136,13 +136,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     void loadSession();
     if (!supabase) return;
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const supabaseClient = supabase;
+    const { data: { subscription } } = supabaseClient.auth.onAuthStateChange((_event, session) => {
       setIsAuthenticated(Boolean(session));
     });
-    const channel = supabase.channel('notifications-live').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, (payload) => {
+    const channel = supabaseClient.channel('notifications-live').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, (payload) => {
       applyNotification(payload.new as Notification);
     }).subscribe();
-    return () => { subscription.unsubscribe(); void supabase.removeChannel(channel); };
+    return () => { subscription.unsubscribe(); void supabaseClient.removeChannel(channel); };
   }, []);
 
   const setUserRole = (role: UserRole) => {
