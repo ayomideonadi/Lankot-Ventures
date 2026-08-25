@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useApp } from '@/context/app-context';
+import { SupplyRequest } from '@/types/b2b';
 import { 
   FileText, 
   Trash2, 
@@ -18,12 +19,12 @@ export default function RFQPage() {
   const { rfqCart, removeFromRFQCart, updateRFQCartQuantity, submitRFQ, userProfile, addCustomToRFQCart } = useApp();
 
   const [targetDate, setTargetDate] = useState('2026-09-20');
-  const [notes, setNotes] = useState('Please include freight delivery options to our Chicago South Logistics Terminal.');
+  const [notes, setNotes] = useState('');
   const [customItemName, setCustomItemName] = useState('');
   const [customQuantity, setCustomQuantity] = useState(1);
   const [customUnit, setCustomUnit] = useState('Units');
   const [showAdditionalItemForm, setShowAdditionalItemForm] = useState(false);
-  const [submittedRfq, setSubmittedRfq] = useState<any>(null);
+  const [submittedRfq, setSubmittedRfq] = useState<SupplyRequest | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,7 +74,7 @@ export default function RFQPage() {
 
           <div className="space-y-2">
             <span className="text-xs font-mono font-bold bg-slate-100 text-slate-700 px-3 py-1 rounded-full uppercase">
-              Reference #: {submittedRfq.rfqNumber}
+              Reference #: {submittedRfq.requestNumber}
             </span>
             <h2 className="text-2xl font-extrabold text-slate-900 pt-2">
               RFQ Submitted Successfully!

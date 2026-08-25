@@ -9,6 +9,7 @@ export default function AdminQuotesPage() {
   const { supplyRequests, submitAdminQuote, clearAdminQuote, removeSupplyRequest } = useApp();
   const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
   const [quoteAmount, setQuoteAmount] = useState<number>(20000);
+  const [itemPrices, setItemPrices] = useState<Record<string, number>>({});
   const [quoteNotes, setQuoteNotes] = useState('Bulk volume tier pricing approved. Free freight dispatch included.');
 
   const activeRequest = supplyRequests.find(r => r.id === selectedRequestId);
@@ -19,7 +20,7 @@ export default function AdminQuotesPage() {
 
     const quoteItems = activeRequest.items.map((item) => ({
       itemId: item.id,
-      unitPrice: Math.max(1, Number((quoteAmount / Math.max(activeRequest.items.length, 1)).toFixed(2)))
+      unitPrice: Math.max(0, itemPrices[item.id] || 0)
     }));
 
     submitAdminQuote(selectedRequestId, quoteItems, 'Fulfillment timing confirmed during admin review', quoteNotes);
@@ -104,8 +105,9 @@ export default function AdminQuotesPage() {
                 <button
                   onClick={() => {
                     setSelectedRequestId(request.id);
-                    const estTotal = request.items.reduce((sum, item) => sum + (item.quantity * 10), 0);
-                    setQuoteAmount(Math.round(estTotal * 0.9));
+                    const initialPrices = Object.fromEntries(request.items.map((item) => [item.id, 10]));
+                    setItemPrices(initialPrices);
+                    setQuoteAmount(request.items.reduce((sum, item) => sum + (item.quantity * (initialPrices[item.id] || 0)), 0));
                   }}
                   className="bg-amber-600 hover:bg-amber-700 text-white font-bold px-5 py-2.5 rounded-xl text-xs shadow flex items-center gap-1.5"
                 >
@@ -133,15 +135,34 @@ export default function AdminQuotesPage() {
             </div>
 
             <form onSubmit={handleSendQuote} className="space-y-4 text-xs">
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">Total quote amount (NGN)</label>
-                <input
-                  type="number"
-                  required
-                  value={quoteAmount}
-                  onChange={(e) => setQuoteAmount(parseFloat(e.target.value) || 0)}
-                  className="w-full p-3 bg-slate-50 border rounded-xl font-bold text-base text-slate-900"
-                />
+              <div className="space-y-3">
+                <p className="font-bold text-slate-700">Quote each requested item (NGN)</p>
+                {activeRequest.items.map((item) => (
+                  <div key={item.id} className="grid grid-cols-[1fr_7rem] items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                    <div>
+                      <p className="font-bold text-slate-900">{item.itemName}</p>
+                      <p className="text-slate-500">{item.quantity} {item.unit} × unit price</p>
+                    </div>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      required
+                      aria-label={`Unit price for ${item.itemName}`}
+                      value={itemPrices[item.id] ?? 0}
+                      onChange={(e) => {
+                        const nextPrice = Math.max(0, parseFloat(e.target.value) || 0);
+                        setItemPrices((prices) => ({ ...prices, [item.id]: nextPrice }));
+                        setQuoteAmount(activeRequest.items.reduce((sum, currentItem) => sum + (currentItem.quantity * (currentItem.id === item.id ? nextPrice : (itemPrices[currentItem.id] || 0))), 0));
+                      }}
+                      className="w-full rounded-lg border border-slate-300 bg-white p-2 font-bold text-slate-900"
+                    />
+                  </div>
+                ))}
+                <div className="flex items-center justify-between border-t border-slate-200 pt-3 text-sm">
+                  <span className="font-bold text-slate-700">Total of all items</span>
+                  <span className="font-extrabold text-emerald-700">NGN {quoteAmount.toLocaleString()}</span>
+                </div>
               </div>
 
               <div>

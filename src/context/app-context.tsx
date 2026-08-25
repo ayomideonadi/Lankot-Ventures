@@ -311,6 +311,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setSupplyRequests(updated);
     localStorage.setItem('lankot_supply_requests', JSON.stringify(updated));
+    const quotedRequest = updated.find((request) => request.id === requestId);
+    if (quotedRequest) {
+      void supabase?.from('supply_requests').update({
+        status: quotedRequest.status,
+        quote_line_items: quotedRequest.quoteLineItems,
+        total_quote_amount: quotedRequest.totalQuoteAmount,
+        freight_terms: quotedRequest.freightTerms,
+        admin_notes: quotedRequest.adminNotes,
+        quoted_at: quotedRequest.quotedAt
+      }).eq('id', requestId);
+    }
   };
 
   const clearAdminQuote = (requestId: string) => {
