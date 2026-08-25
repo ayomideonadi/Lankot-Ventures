@@ -10,7 +10,7 @@ export default function AdminQuotesPage() {
   const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
   const [quoteAmount, setQuoteAmount] = useState<number>(20000);
   const [itemPrices, setItemPrices] = useState<Record<string, number>>({});
-  const [quoteNotes, setQuoteNotes] = useState('Bulk volume tier pricing approved. Free freight dispatch included.');
+  const [quoteNotes, setQuoteNotes] = useState('');
 
   const activeRequest = supplyRequests.find(r => r.id === selectedRequestId);
 

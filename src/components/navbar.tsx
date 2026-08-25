@@ -179,19 +179,20 @@ export const Navbar: React.FC = () => {
                 Sign in
               </Link>
             )}
-            {/* RFQ Builder Cart Button */}
-            <Link
-              href="/rfq"
-              className="relative flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-semibold shadow-sm transition-all"
-            >
-              <FileText className="w-4 h-4" />
-              <span className="hidden sm:inline">Request Quote</span>
-              {cartItemCount > 0 && (
-                <span className="bg-amber-400 text-slate-900 font-extrabold text-xs px-2 py-0.5 rounded-full animate-pulse">
-                  {cartItemCount}
-                </span>
-              )}
-            </Link>
+            {userRole === 'buyer' && (
+              <Link
+                href="/rfq"
+                className="relative flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-semibold shadow-sm transition-all"
+              >
+                <FileText className="w-4 h-4" />
+                <span className="hidden sm:inline">Request Quote</span>
+                {cartItemCount > 0 && (
+                  <span className="bg-amber-400 text-slate-900 font-extrabold text-xs px-2 py-0.5 rounded-full animate-pulse">
+                    {cartItemCount}
+                  </span>
+                )}
+              </Link>
+            )}
 
             {/* Mobile menu trigger */}
             <button
@@ -222,20 +223,24 @@ export const Navbar: React.FC = () => {
           >
             Why Lankot
           </Link>
-          <Link
-            href="/dashboard"
-            onClick={() => setMobileMenuOpen(false)}
-            className="block px-3 py-2 rounded-lg text-base font-medium text-blue-600 hover:bg-blue-50"
-          >
-            Client Dashboard
-          </Link>
-          <Link
-            href="/orders"
-            onClick={() => setMobileMenuOpen(false)}
-            className="block px-3 py-2 rounded-lg text-base font-medium text-slate-800 hover:bg-slate-50"
-          >
-            Order History
-          </Link>
+          {userRole === 'buyer' && (
+            <>
+              <Link
+                href="/dashboard"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block px-3 py-2 rounded-lg text-base font-medium text-blue-600 hover:bg-blue-50"
+              >
+                Client Dashboard
+              </Link>
+              <Link
+                href="/orders"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block px-3 py-2 rounded-lg text-base font-medium text-slate-800 hover:bg-slate-50"
+              >
+                Order History
+              </Link>
+            </>
+          )}
           {userRole === 'admin' && (
             <div className="pt-2 border-t border-slate-100 mt-2 space-y-1">
               <span className="text-xs font-bold text-amber-700 uppercase px-3">Admin Portal</span>
