@@ -189,13 +189,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const { data, error } = await supabase.auth.signUp({
       email: profile.email.trim(),
       password,
-      options: { data: updatedProfile }
+      options: {
+        data: updatedProfile,
+        emailRedirectTo: typeof window !== 'undefined' ? `${window.location.origin}/login` : undefined
+      }
     });
     if (error) return { success: false, error: error.message };
     setUserProfile(updatedProfile);
     setUserRoleState('buyer');
     setIsAuthenticated(Boolean(data.session));
-    return { success: true };
+    return { success: true, requiresConfirmation: !data.session };
   };
 
   const submitSupplyRequest = (
