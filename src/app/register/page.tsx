@@ -60,14 +60,14 @@ export default function RegisterPage() {
                 placeholder="e.g. Apex Business & Logistics Inc."
                 value={form.companyName}
                 onChange={(e) => setForm({ ...form, companyName: e.target.value })}
-                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1 sm:col-span-2">
                 <label className="text-xs font-bold text-slate-700 uppercase">Primary Industry</label>
-                <select className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <select className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500">
                   <option>Business Operations</option>
                   <option>Business Operations</option>
                   <option>Retail</option>
@@ -86,7 +86,7 @@ export default function RegisterPage() {
                   minLength={6}
                   value={form.password}
                   onChange={(e) => setForm({ ...form, password: e.target.value })}
-                  className="w-full p-3 pr-11 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full p-3 pr-11 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 <button
                   type="button"
@@ -111,7 +111,7 @@ export default function RegisterPage() {
                   placeholder="Your name"
                   value={form.contactPerson}
                   onChange={(e) => setForm({ ...form, contactPerson: e.target.value })}
-                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
@@ -123,7 +123,7 @@ export default function RegisterPage() {
                   placeholder="you@company.com"
                   value={form.email}
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
             </div>
