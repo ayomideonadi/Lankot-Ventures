@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useApp } from '@/context/app-context';
 import { SupplyRequest } from '@/types/b2b';
 import { 
@@ -16,6 +17,7 @@ import {
 } from 'lucide-react';
 
 export default function RFQPage() {
+  const router = useRouter();
   const { rfqCart, removeFromRFQCart, updateRFQCartQuantity, submitRFQ, userProfile, addCustomToRFQCart } = useApp();
 
   const [targetDate, setTargetDate] = useState('2026-09-20');
@@ -24,14 +26,14 @@ export default function RFQPage() {
   const [customQuantity, setCustomQuantity] = useState(1);
   const [customUnit, setCustomUnit] = useState('Units');
   const [showAdditionalItemForm, setShowAdditionalItemForm] = useState(false);
-  const [submittedRfq, setSubmittedRfq] = useState<SupplyRequest | null>(null);
+  const [submittedRfq] = useState<SupplyRequest | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (rfqCart.length === 0) return;
     try {
       const newRfq = await submitRFQ(targetDate, notes);
-      setSubmittedRfq(newRfq);
+      router.push(`/dashboard?submitted=${encodeURIComponent(newRfq.requestNumber)}`);
     } catch (error) {
       console.error(error);
     }

@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useApp } from '@/context/app-context';
 import { formatNaira } from '@/lib/currency';
@@ -19,6 +19,14 @@ import {
 
 export default function ClientDashboardPage() {
   const { userProfile, orders, supplyRequests, placeOrderFromRFQ } = useApp();
+  const [submittedRequestNumber, setSubmittedRequestNumber] = useState<string | null>(null);
+
+  useEffect(() => {
+    const requestNumber = new URLSearchParams(window.location.search).get('submitted');
+    if (!requestNumber) return;
+    window.setTimeout(() => setSubmittedRequestNumber(requestNumber), 0);
+    window.history.replaceState({}, '', '/dashboard');
+  }, []);
 
   const activeOrders = orders.filter(o => o.status !== 'delivered');
   const pendingRequests = supplyRequests.filter(r => r.status === 'pending' || r.status === 'quoted');
@@ -41,6 +49,12 @@ export default function ClientDashboardPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+      {submittedRequestNumber && (
+        <div role="status" className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm text-emerald-900">
+          <p className="font-extrabold">Request submitted successfully.</p>
+          <p className="mt-1 text-emerald-800">Reference: {submittedRequestNumber}. The admin team will review it and prepare your quote.</p>
+        </div>
+      )}
       
       {/* Welcome Banner */}
       <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6">
