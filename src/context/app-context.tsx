@@ -40,7 +40,7 @@ interface AppContextType {
   rfqCart: LegacyRFQCartItem[];
   savedLists: LegacySavedList[];
   // Actions
-  submitSupplyRequest: (items: Omit<ClientItemDrop, 'id'>[], targetDeliveryDate: string, generalNotes?: string) => SupplyRequest;
+  submitSupplyRequest: (items: Omit<ClientItemDrop, 'id'>[], targetDeliveryDate: string, generalNotes?: string) => Promise<SupplyRequest>;
   removeSupplyRequest: (requestId: string) => void;
   submitAdminQuote: (requestId: string, quoteItems: { itemId: string; unitPrice: number }[], freightTerms: string, adminNotes?: string) => void;
   clearAdminQuote: (requestId: string) => void;
@@ -52,7 +52,7 @@ interface AppContextType {
   removeFromRFQCart: (productId: string) => void;
   updateRFQCartQuantity: (productId: string, quantity: number) => void;
   addCustomToRFQCart: (itemName: string, quantity: number, unit: string) => void;
-  submitRFQ: (targetDeliveryDate: string, generalNotes?: string) => SupplyRequest;
+  submitRFQ: (targetDeliveryDate: string, generalNotes?: string) => Promise<SupplyRequest>;
   updateRFQStatus: (rfqId: string, status: SupplyRequest['status'], quoteAmount?: number, quoteNotes?: string) => void;
   placeOrderFromRFQ: (rfqId: string, poNumber: string, shippingAddress: string) => Order;
   placeQuickOrder: (items: { productId: string; quantity: number }[], poNumber: string, shippingAddress: string) => Order;
@@ -96,6 +96,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   useEffect(() => {
     const loadSession = async () => {
+      let loadedRequestsFromSupabase = false;
       try {
         if (supabase) {
           const { data: { session } } = await supabase.auth.getSession();
@@ -110,6 +111,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             }
           }
           if (session?.user.email) {
+            const { data: savedRequests } = await supabase.from('supply_requests').select('*').order('created_at', { ascending: false });
+            if (savedRequests) {
+              loadedRequestsFromSupabase = true;
+              setSupplyRequests(savedRequests.map((request) => ({
+                ...request,
+                requestNumber: request.request_number,
+                clientCompany: request.client_company,
+                clientContact: request.client_contact,
+                targetDeliveryDate: request.target_delivery_date,
+                generalNotes: request.general_notes,
+                quoteLineItems: request.quote_line_items,
+                totalQuoteAmount: request.total_quote_amount,
+                freightTerms: request.freight_terms,
+                adminNotes: request.admin_notes,
+                quotedAt: request.quoted_at,
+                createdAt: request.created_at
+              })) as SupplyRequest[]);
+            }
             const { data: existingNotifications } = await supabase.from('notifications').select('*').eq('recipient_email', session.user.email).order('created_at', { ascending: false }).limit(30);
             existingNotifications?.forEach((notification) => applyNotification(notification as Notification));
           }
@@ -122,8 +141,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const savedProfile = localStorage.getItem('lankot_user_profile');
         if (savedProfile) setUserProfile(JSON.parse(savedProfile));
 
-        const savedRequests = localStorage.getItem('lankot_supply_requests');
-        if (savedRequests) setSupplyRequests(JSON.parse(savedRequests));
+        const localRequests = localStorage.getItem('lankot_supply_requests');
+        if (!loadedRequestsFromSupabase && localRequests) setSupplyRequests(JSON.parse(localRequests));
 
         const savedOrders = localStorage.getItem('lankot_orders');
         if (savedOrders) setOrders(JSON.parse(savedOrders));
@@ -201,11 +220,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { success: true, requiresConfirmation: !data.session };
   };
 
-  const submitSupplyRequest = (
+  const submitSupplyRequest = async (
     rawItems: Omit<ClientItemDrop, 'id'>[],
     targetDeliveryDate: string,
     generalNotes?: string
-  ): SupplyRequest => {
+  ): Promise<SupplyRequest> => {
     const formattedItems: ClientItemDrop[] = rawItems.map((item, idx) => ({
       ...item,
       id: `item-${Date.now()}-${idx}`
@@ -228,6 +247,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const updated = [newReq, ...supplyRequests];
     setSupplyRequests(updated);
     localStorage.setItem('lankot_supply_requests', JSON.stringify(updated));
+    if (supabase) {
+      const { error } = await supabase.from('supply_requests').insert({
+        id: newReq.id,
+        request_number: newReq.requestNumber,
+        client_company: newReq.clientCompany,
+        client_contact: newReq.clientContact,
+        email: newReq.email,
+        phone: newReq.phone,
+        items: newReq.items,
+        target_delivery_date: newReq.targetDeliveryDate,
+        general_notes: newReq.generalNotes,
+        status: newReq.status,
+        created_at: newReq.createdAt
+      });
+      if (error) throw new Error(`Unable to save request: ${error.message}`);
+    }
     return newReq;
   };
 
@@ -407,7 +442,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setRfqCart((prev) => prev.map((item) => item.productId === productId ? { ...item, quantity: Math.max(1, quantity) } : item));
   };
 
-  const submitRFQ = (targetDeliveryDate: string, generalNotes?: string): SupplyRequest => {
+  const submitRFQ = async (targetDeliveryDate: string, generalNotes?: string): Promise<SupplyRequest> => {
     const items = rfqCart.map((entry, idx) => ({
       id: `req-item-${Date.now()}-${idx}`,
       itemName: entry.product?.name || entry.itemName || `Custom Item ${idx + 1}`,

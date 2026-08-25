@@ -25,11 +25,15 @@ export default function RFQPage() {
   const [showAdditionalItemForm, setShowAdditionalItemForm] = useState(false);
   const [submittedRfq, setSubmittedRfq] = useState<any>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (rfqCart.length === 0) return;
-    const newRfq = submitRFQ(targetDate, notes);
-    setSubmittedRfq(newRfq);
+    try {
+      const newRfq = await submitRFQ(targetDate, notes);
+      setSubmittedRfq(newRfq);
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   const addItemToRequest = () => {
