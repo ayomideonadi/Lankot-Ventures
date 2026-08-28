@@ -184,6 +184,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       await supabase.auth.signOut();
       return { success: false, error: 'This account is not authorized for admin access.' };
     }
+    const metadata = data.user?.user_metadata as Partial<UserProfile> | undefined;
+    if (data.user) {
+      setUserProfile({
+        ...INITIAL_USER,
+        ...metadata,
+        email: data.user.email || metadata?.email || email.trim(),
+        role: accountRole
+      });
+    }
     setUserRoleState(accountRole);
     setIsAuthenticated(Boolean(data.session));
     return { success: true, requiresConfirmation: !data.session };

@@ -29,8 +29,11 @@ create table if not exists public.supply_requests (
   quoted_at date
 );
 
+grant select, insert, update on table public.supply_requests to authenticated;
+
 alter table public.supply_requests enable row level security;
 
+drop policy if exists "Buyers can read their own requests" on public.supply_requests;
 create policy "Buyers can read their own requests"
   on public.supply_requests for select
   to authenticated
@@ -39,11 +42,13 @@ create policy "Buyers can read their own requests"
     or lower(auth.jwt() ->> 'email') = 'lankotventures01@gmail.com'
   );
 
+drop policy if exists "Buyers can create their own requests" on public.supply_requests;
 create policy "Buyers can create their own requests"
   on public.supply_requests for insert
   to authenticated
   with check (lower(email) = lower(auth.jwt() ->> 'email'));
 
+drop policy if exists "Admins can update requests" on public.supply_requests;
 create policy "Admins can update requests"
   on public.supply_requests for update
   to authenticated
@@ -53,21 +58,38 @@ create policy "Admins can update requests"
 create index if not exists notifications_recipient_created_idx
   on public.notifications (lower(recipient_email), created_at desc);
 
+grant select, insert, update on table public.notifications to authenticated;
+
 alter table public.notifications enable row level security;
 
+drop policy if exists "Users can read their notifications" on public.notifications;
 create policy "Users can read their notifications"
   on public.notifications for select
   using (lower(recipient_email) = lower(auth.jwt() ->> 'email'));
 
+drop policy if exists "Authenticated users can create notifications" on public.notifications;
 create policy "Authenticated users can create notifications"
   on public.notifications for insert
   to authenticated
   with check (true);
 
+drop policy if exists "Users can mark their notifications read" on public.notifications;
 create policy "Users can mark their notifications read"
   on public.notifications for update
   using (lower(recipient_email) = lower(auth.jwt() ->> 'email'))
   with check (lower(recipient_email) = lower(auth.jwt() ->> 'email'));
 
 -- Enable Realtime for live in-app updates.
-alter publication supabase_realtime add table public.notifications;
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public'
+      and tablename = 'notifications'
+  ) then
+    alter publication supabase_realtime add table public.notifications;
+  end if;
+end
+$$;

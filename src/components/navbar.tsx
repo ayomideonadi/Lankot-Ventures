@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useApp } from '../context/app-context';
 import { 
   FileText, 
@@ -15,9 +15,11 @@ import {
 
 export const Navbar: React.FC = () => {
   const pathname = usePathname();
+  const router = useRouter();
   const { userRole, isAuthenticated, signOut, rfqCart, rfqs, orders, notifications, markNotificationRead } = useApp();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
 
   const cartItemCount = rfqCart.reduce((sum, item) => sum + item.quantity, 0);
   const pendingRfqsCount = rfqs.filter(r => r.status === 'pending').length;
@@ -25,6 +27,17 @@ export const Navbar: React.FC = () => {
   const unreadNotifications = notifications.filter((notification) => !notification.read_at);
 
   const isActive = (path: string) => pathname === path;
+
+  const handleSignOut = async () => {
+    if (signingOut) return;
+    setSigningOut(true);
+    try {
+      await signOut();
+      router.replace('/login');
+    } finally {
+      setSigningOut(false);
+    }
+  };
 
   return (
     <header className="sticky top-0 z-40 bg-white border-b border-slate-200 shadow-sm">
@@ -169,10 +182,12 @@ export const Navbar: React.FC = () => {
             )}
             {isAuthenticated ? (
               <button
-                onClick={() => { signOut(); window.location.href = '/login'; }}
+                type="button"
+                onClick={() => void handleSignOut()}
+                disabled={signingOut}
                 className="hidden sm:inline-flex rounded-lg px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900"
               >
-                Sign out
+                {signingOut ? 'Signing out...' : 'Sign out'}
               </button>
             ) : (
               <Link href="/login" className="hidden sm:inline-flex rounded-lg px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900">

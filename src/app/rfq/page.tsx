@@ -27,15 +27,19 @@ export default function RFQPage() {
   const [customUnit, setCustomUnit] = useState('Units');
   const [showAdditionalItemForm, setShowAdditionalItemForm] = useState(false);
   const [submittedRfq] = useState<SupplyRequest | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (rfqCart.length === 0) return;
+    if (rfqCart.length === 0 || isSubmitting) return;
+    setIsSubmitting(true);
     try {
       const newRfq = await submitRFQ(targetDate, notes);
+      window.alert(`Request ${newRfq.requestNumber} has been submitted successfully. You can track it from your dashboard.`);
       router.push(`/dashboard?submitted=${encodeURIComponent(newRfq.requestNumber)}`);
     } catch (error) {
       console.error(error);
+      setIsSubmitting(false);
     }
   };
 
@@ -264,9 +268,10 @@ export default function RFQPage() {
               {/* Submit CTA */}
               <button
                 type="submit"
+                disabled={isSubmitting}
                 className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-600/25 flex items-center justify-center gap-2 transition-all text-sm"
               >
-                <Send className="w-4 h-4" /> Submit request
+                <Send className="w-4 h-4" /> {isSubmitting ? 'Submitting request...' : 'Submit request'}
               </button>
 
               <p className="text-[11px] text-slate-400 text-center leading-relaxed">
