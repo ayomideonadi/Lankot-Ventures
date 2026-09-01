@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { SupplyRequest, Order, UserRole, UserProfile, ClientItemDrop, QuoteLineItem, OrderStatus, Product, Notification } from '../types/b2b';
 import { INITIAL_REQUESTS, INITIAL_ORDERS, INITIAL_USER } from '../data/mock-data';
 import { supabase } from '@/lib/supabase';
+import { validatePassword } from '@/lib/password-validation';
 
 const adminEmail = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'lankotventures01@gmail.com').trim().toLowerCase();
 
@@ -172,7 +173,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const signIn = async (email: string, password: string, role: UserRole) => {
-    if (!email.trim() || password.length < 6) return { success: false, error: 'Enter a valid email and a password with at least 6 characters.' };
+    if (!email.trim()) return { success: false, error: 'Email is required.' };
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.valid) return { success: false, error: passwordValidation.error };
     if (!supabase) return { success: false, error: 'Authentication is not configured. Add the Supabase environment variables.' };
     if (role === 'admin' && email.trim().toLowerCase() !== adminEmail) {
       return { success: false, error: 'This email is not authorized for admin access.' };
@@ -207,7 +210,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const registerAccount = async (profile: Pick<UserProfile, 'companyName' | 'taxId' | 'industry' | 'contactPerson' | 'email'>, password: string) => {
-    if (password.length < 6) return { success: false, error: 'Password must contain at least 6 characters.' };
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.valid) return { success: false, error: passwordValidation.error };
     if (!supabase) return { success: false, error: 'Authentication is not configured. Add the Supabase environment variables.' };
     const updatedProfile: UserProfile = {
       ...userProfile,
