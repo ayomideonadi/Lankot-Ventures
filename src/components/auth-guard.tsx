@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useApp } from '@/context/app-context';
 
-const clientPaths = ['/dashboard', '/orders', '/rfq', '/saved-lists'];
+const clientPaths = ['/dashboard', '/orders', '/rfq', '/saved-lists', '/settings'];
 const adminPaths = ['/admin'];
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
@@ -12,14 +12,14 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { isAuthenticated, authReady, userRole } = useApp();
   const isClientPath = clientPaths.some((path) => pathname === path || pathname.startsWith(`${path}/`));
-  const isAdminPath = adminPaths.some((path) => pathname === path || pathname.startsWith(`${path}/`));
+  const isAdminPath = adminPaths.some((path) => pathname === path || pathname.startsWith(`${path}/`)) && pathname !== '/admin/login';
   const requiresAuth = isClientPath || isAdminPath;
   const hasRouteAccess = isAuthenticated && (isClientPath ? userRole === 'buyer' : userRole === 'admin');
 
   useEffect(() => {
     if (!authReady || !requiresAuth) return;
     if (!isAuthenticated) {
-      router.replace('/login');
+      router.replace(isAdminPath ? '/admin/login' : '/login');
     } else if (isClientPath && userRole === 'admin') {
       router.replace('/admin/quotes');
     } else if (isAdminPath && userRole !== 'admin') {

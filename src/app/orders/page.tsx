@@ -1,154 +1,166 @@
 'use client';
 
-import React, { useState } from 'react';
 import Link from 'next/link';
+import { useMemo, useState } from 'react';
 import { useApp } from '@/context/app-context';
 import { formatNaira } from '@/lib/currency';
-import { ShoppingBag, Search, Truck, CheckCircle2, ArrowRight, Clock, FileText } from 'lucide-react';
+import { Badge, Card, EmptyState } from '@/components/ui';
+import { ArrowUpDown, ChevronRight, FileText, PackageCheck, Search, Truck } from 'lucide-react';
+
+function Status({ value }: { value: string }) {
+  if (value === 'delivered') return <Badge tone="success">Delivered</Badge>;
+  if (value === 'shipped') return <Badge tone="info">Dispatched</Badge>;
+  if (value === 'processing' || value === 'confirmed') return <Badge tone="warning">Processing</Badge>;
+  return <Badge tone="neutral">Submitted</Badge>;
+}
 
 export default function OrdersPage() {
-  const { orders, placeQuickOrder } = useApp();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('All');
+  const { orders, supplyRequests } = useApp();
+  const [search, setSearch] = useState('');
+  const [status, setStatus] = useState('all');
+  const [date, setDate] = useState('all');
+  const [sort, setSort] = useState('newest');
+  const query = search.toLowerCase().trim();
+  const months = [...new Set(orders.map((order) => order.createdAt.slice(0, 7)))];
 
-  const filteredOrders = orders.filter(o => {
-    const invoiceValue = o.invoiceNumber?.toLowerCase() ?? '';
-    const matchesSearch = 
-      o.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      o.poNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      invoiceValue.includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'All' || o.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  const visibleOrders = useMemo(() => [...orders].filter((order) => {
+    const description = order.items.map((item) => item.itemName).join(' ');
+    const matchesSearch = !query || `${order.orderNumber} ${order.poNumber} ${order.invoiceNumber || ''} ${description}`.toLowerCase().includes(query);
+    return matchesSearch && (status === 'all' || order.status === status) && (date === 'all' || order.createdAt.slice(0, 7) === date);
+  }).sort((a, b) => sort === 'oldest' ? a.createdAt.localeCompare(b.createdAt) : b.createdAt.localeCompare(a.createdAt)), [date, orders, query, sort, status]);
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'delivered':
-        return <span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-3 py-1 rounded-full border border-emerald-300">Delivered</span>;
-      case 'shipped':
-        return <span className="bg-blue-100 text-blue-800 text-xs font-bold px-3 py-1 rounded-full border border-blue-300">Shipped (In Transit)</span>;
-      case 'processing':
-        return <span className="bg-purple-100 text-purple-800 text-xs font-bold px-3 py-1 rounded-full border border-purple-300">Processing</span>;
-      case 'confirmed':
-        return <span className="bg-indigo-100 text-indigo-800 text-xs font-bold px-3 py-1 rounded-full border border-indigo-300">Confirmed</span>;
-      default:
-        return <span className="bg-amber-100 text-amber-800 text-xs font-bold px-3 py-1 rounded-full border border-amber-300">Pending Review</span>;
-    }
+  const deliveryDate = (orderId: string, orderStatus: string) => {
+    const order = orders.find((item) => item.id === orderId);
+    if (orderStatus === 'delivered') return order?.updatedAt || 'Delivered';
+    return supplyRequests.find((request) => request.id === order?.requestId)?.targetDeliveryDate || 'In coordination';
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
-      
-      <div className="border-b border-slate-200 pb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
+      <header className="mb-8 flex flex-col justify-between gap-4 border-b border-[#e2e8f0] pb-6 sm:flex-row sm:items-end">
         <div>
-          <span className="text-blue-600 text-xs font-bold uppercase tracking-wider">Client Portal</span>
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight mt-1">
-            Order History & Fulfillment Status
-          </h1>
-          <p className="text-slate-500 text-sm mt-1">
-            Track approved requests, order timelines, and fulfillment updates in one place.
-          </p>
+          <p className="text-xs font-bold uppercase tracking-wider text-[#0b8f55]">Client portal</p>
+          <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-[#0f172a]">Orders</h1>
+          <p className="mt-1 text-sm text-[#64748b]">Track approved procurement through fulfilment and delivery.</p>
         </div>
-
-        <Link
-          href="/rfq"
-          className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-2.5 rounded-xl text-xs shadow transition-colors self-start sm:self-auto"
-        >
-          + New Request
+        <Link href="/rfq" className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-[#0b8f55] px-4 text-sm font-bold text-white shadow-sm hover:bg-[#087443] transition-colors">
+          <FileText className="h-4 w-4" />New procurement request
         </Link>
-      </div>
+      </header>
 
-      {/* Filter Bar */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="relative w-full sm:w-80">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-          <input
-            type="text"
-            placeholder="Search by Order #, PO #, Invoice #..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <span className="text-xs text-slate-500 font-medium">Filter Status:</span>
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:outline-none"
-          >
-            <option value="All">All Statuses</option>
-            <option value="pending">Pending</option>
+      <Card className="mb-6 p-4">
+        <div className="grid gap-3 lg:grid-cols-[minmax(220px,1fr)_180px_180px_180px]">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94a3b8]" />
+            <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search orders, PO or invoice" aria-label="Search orders" className="h-10 w-full border border-[#e2e8f0] bg-[#f8fafc] pl-9 pr-3 text-sm" />
+          </div>
+          <select value={status} onChange={(event) => setStatus(event.target.value)} aria-label="Filter by status" className="h-10 border border-[#e2e8f0] bg-[#f8fafc] px-3 text-sm">
+            <option value="all">All statuses</option>
+            <option value="pending">Submitted</option>
             <option value="confirmed">Confirmed</option>
             <option value="processing">Processing</option>
-            <option value="shipped">Shipped</option>
+            <option value="shipped">Dispatched</option>
             <option value="delivered">Delivered</option>
           </select>
+          <select value={date} onChange={(event) => setDate(event.target.value)} aria-label="Filter by date" className="h-10 border border-[#e2e8f0] bg-[#f8fafc] px-3 text-sm">
+            <option value="all">All dates</option>
+            {months.map((month) => <option key={month} value={month}>{month}</option>)}
+          </select>
+          <label className="relative">
+            <ArrowUpDown className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94a3b8]" />
+            <select value={sort} onChange={(event) => setSort(event.target.value)} aria-label="Sort orders" className="h-10 w-full border border-[#e2e8f0] bg-[#f8fafc] pl-9 pr-3 text-sm">
+              <option value="newest">Newest first</option>
+              <option value="oldest">Oldest first</option>
+            </select>
+          </label>
         </div>
-      </div>
+      </Card>
 
-      {/* Orders List */}
-      <div className="space-y-4">
-        {filteredOrders.map((ord) => (
-          <div key={ord.id} className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-4 hover:shadow-md transition-shadow">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-4">
-              <div>
-                <div className="flex items-center gap-3">
-                  <span className="font-mono font-extrabold text-base text-slate-900">{ord.orderNumber}</span>
-                  {getStatusBadge(ord.status)}
-                </div>
-                <p className="text-xs text-slate-400 mt-1">
-                  PO #: <span className="font-semibold text-slate-700">{ord.poNumber}</span> • Invoice: <span className="font-semibold text-slate-700">{ord.invoiceNumber ?? '—'}</span> • Placed: {ord.createdAt}
-                </p>
-              </div>
-
-              <div className="text-right">
-                <span className="text-xs text-slate-400 block">Total Invoice Amount</span>
-                <span className="text-xl font-extrabold text-slate-900">{formatNaira(ord.totalAmount)}</span>
-              </div>
-            </div>
-
-            {/* Line items list */}
-            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-xs space-y-2">
-              <span className="font-bold text-slate-700 block uppercase tracking-wider text-[10px]">Line Items ({ord.items.length})</span>
-              {ord.items.map((item, idx) => (
-                <div key={idx} className="flex items-center justify-between text-slate-700">
-                  <span className="font-medium text-slate-900">{item.itemName}</span>
-                  <span className="font-semibold">{item.quantity} {item.unit} @ {formatNaira(item.unitPrice)}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* Actions footer */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
-              <div className="text-xs text-slate-500">
-                {ord.trackingNumber ? (
-                  <span className="flex items-center gap-1.5 text-blue-600 font-semibold">
-                    <Truck className="w-4 h-4" /> Tracking #: {ord.trackingNumber}
-                  </span>
-                ) : (
-                  <span>Shipping Address: {ord.shippingAddress}</span>
-                )}
-              </div>
-
-              <div className="flex items-center gap-3 w-full sm:w-auto">
-                <Link href="/rfq" className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-4 py-2 rounded-xl text-xs transition-colors border border-slate-200 flex-1 sm:flex-initial text-center">
-                  Submit new request
-                </Link>
-                <Link
-                  href={`/orders/${ord.id}`}
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition-colors shadow flex-1 sm:flex-initial text-center"
-                >
-                  View Details & Tracking →
-                </Link>
-              </div>
-            </div>
-
+      {visibleOrders.length === 0 ? (
+        <EmptyState
+          title={orders.length ? 'No orders match these filters' : 'No orders yet'}
+          description={orders.length ? 'Try changing your search or filters.' : 'Approved quotes will appear here as trackable orders.'}
+          action={
+            <Link href="/rfq" className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-[#173962] px-4 text-sm font-bold text-white hover:bg-[#102a4c]">
+              <FileText className="h-4 w-4" />Create request
+            </Link>
+          }
+        />
+      ) : (
+        <Card className="overflow-hidden">
+          <div className="hidden overflow-x-auto md:block">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-[#f8fafc] text-[10px] uppercase tracking-wider text-[#64748b]">
+                <tr>
+                  <th className="px-6 py-4 font-semibold">Order ID</th>
+                  <th className="px-4 py-4 font-semibold">Order description</th>
+                  <th className="px-4 py-4 font-semibold">Date</th>
+                  <th className="px-4 py-4 font-semibold">Amount</th>
+                  <th className="px-4 py-4 font-semibold">Status</th>
+                  <th className="px-4 py-4 font-semibold">Expected delivery</th>
+                  <th className="px-6 py-4 text-right font-semibold">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#e2e8f0]">
+                {visibleOrders.map((order) => (
+                  <tr key={order.id} className="hover:bg-[#f8fafc]/80 transition-colors">
+                    <td className="px-6 py-4 font-mono font-bold text-[#173962]">{order.orderNumber}</td>
+                    <td className="max-w-xs px-4 py-4 font-semibold text-[#334155] truncate">{order.items.map((item) => item.itemName).join(', ')}</td>
+                    <td className="whitespace-nowrap px-4 py-4 text-[#64748b]">{order.createdAt}</td>
+                    <td className="whitespace-nowrap px-4 py-4 font-bold text-[#0f172a]">{formatNaira(order.totalAmount)}</td>
+                    <td className="px-4 py-4"><Status value={order.status} /></td>
+                    <td className="whitespace-nowrap px-4 py-4 text-[#64748b]">{deliveryDate(order.id, order.status)}</td>
+                    <td className="px-6 py-4 text-right">
+                      <Link href={`/orders/${order.id}`} className="inline-flex items-center gap-1 text-xs font-bold text-[#173962] hover:underline">
+                        View order <ChevronRight className="h-3.5 w-3.5" />
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        ))}
+          <div className="divide-y divide-[#e2e8f0] md:hidden">
+            {visibleOrders.map((order) => (
+              <div key={order.id} className="space-y-4 p-5">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-mono text-xs font-bold text-[#173962]">{order.orderNumber}</p>
+                    <p className="mt-1 text-sm font-bold text-[#0f172a]">{order.items.map((item) => item.itemName).join(', ')}</p>
+                  </div>
+                  <Status value={order.status} />
+                </div>
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  <div>
+                    <p className="text-[#94a3b8]">Date</p>
+                    <p className="mt-1 font-semibold text-[#334155]">{order.createdAt}</p>
+                  </div>
+                  <div>
+                    <p className="text-[#94a3b8]">Amount</p>
+                    <p className="mt-1 font-semibold text-[#0f172a]">{formatNaira(order.totalAmount)}</p>
+                  </div>
+                  <div>
+                    <p className="text-[#94a3b8]">Expected delivery</p>
+                    <p className="mt-1 font-semibold text-[#334155]">{deliveryDate(order.id, order.status)}</p>
+                  </div>
+                  <div>
+                    <p className="text-[#94a3b8]">PO number</p>
+                    <p className="mt-1 font-semibold text-[#334155]">{order.poNumber}</p>
+                  </div>
+                </div>
+                <Link href={`/orders/${order.id}`} className="inline-flex items-center gap-1 text-xs font-bold text-[#173962]">
+                  View order <ChevronRight className="h-3.5 w-3.5" />
+                </Link>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+      <div className="mt-5 flex flex-wrap gap-4 text-xs text-[#64748b]">
+        <span className="flex items-center gap-1.5"><PackageCheck className="h-4 w-4 text-[#0b8f55]" />{orders.filter((order) => order.status !== 'delivered').length} active orders</span>
+        <span className="flex items-center gap-1.5"><Truck className="h-4 w-4 text-[#173962]" />{orders.filter((order) => order.trackingNumber).length} with tracking references</span>
       </div>
-
-    </div>
+    </main>
   );
 }
+

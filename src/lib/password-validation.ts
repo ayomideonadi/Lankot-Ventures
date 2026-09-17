@@ -5,10 +5,10 @@
  * - At least one uppercase letter
  * - At least one lowercase letter
  * - At least one number
- * - At least one special character
+ * - No special character requirement
  */
 
-const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[a-zA-Z\d@$!%*?&]{8,}$/;
+const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/;
 
 export const validatePassword = (password: string): { valid: boolean; error?: string } => {
   if (!password) {
@@ -29,10 +29,6 @@ export const validatePassword = (password: string): { valid: boolean; error?: st
 
   if (!/\d/.test(password)) {
     return { valid: false, error: 'Password must contain at least one number.' };
-  }
-
-  if (!/[@$!%*?&]/.test(password)) {
-    return { valid: false, error: 'Password must contain at least one special character (@$!%*?&).' };
   }
 
   return { valid: true };

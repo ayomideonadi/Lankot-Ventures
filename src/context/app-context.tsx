@@ -32,7 +32,7 @@ interface AppContextType {
   setUserRole: (role: UserRole) => void;
   signIn: (email: string, password: string, role: UserRole) => Promise<{ success: boolean; error?: string }>;
   signOut: () => Promise<void>;
-  registerAccount: (profile: Pick<UserProfile, 'companyName' | 'taxId' | 'industry' | 'contactPerson' | 'email'>, password: string) => Promise<{ success: boolean; error?: string; requiresConfirmation?: boolean }>;
+  registerAccount: (profile: Pick<UserProfile, 'companyName' | 'taxId' | 'industry' | 'contactPerson' | 'email' | 'phone'>, password: string) => Promise<{ success: boolean; error?: string; requiresConfirmation?: boolean }>;
   supplyRequests: SupplyRequest[];
   rfqs: SupplyRequest[];
   orders: Order[];
@@ -140,13 +140,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         localStorage.setItem('lankot_data_version', storageVersion);
       }
         const savedProfile = localStorage.getItem('lankot_user_profile');
-        if (savedProfile) setUserProfile(JSON.parse(savedProfile));
+        if (savedProfile) {
+          try {
+            setUserProfile(JSON.parse(savedProfile));
+          } catch (e) {
+            console.error('Failed to parse saved user profile from storage:', e);
+          }
+        }
 
         const localRequests = localStorage.getItem('lankot_supply_requests');
-        if (!loadedRequestsFromSupabase && localRequests) setSupplyRequests(JSON.parse(localRequests));
+        if (!loadedRequestsFromSupabase && localRequests) {
+          try {
+            setSupplyRequests(JSON.parse(localRequests));
+          } catch (e) {
+            console.error('Failed to parse saved supply requests from storage:', e);
+          }
+        }
 
         const savedOrders = localStorage.getItem('lankot_orders');
-        if (savedOrders) setOrders(JSON.parse(savedOrders));
+        if (savedOrders) {
+          try {
+            setOrders(JSON.parse(savedOrders));
+          } catch (e) {
+            console.error('Failed to parse saved orders from storage:', e);
+          }
+        }
       } catch (error) {
         console.error('Failed to load authentication and storage state:', error);
       } finally {
@@ -209,7 +227,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setUserRoleState('buyer');
   };
 
-  const registerAccount = async (profile: Pick<UserProfile, 'companyName' | 'taxId' | 'industry' | 'contactPerson' | 'email'>, password: string) => {
+  const registerAccount = async (profile: Pick<UserProfile, 'companyName' | 'taxId' | 'industry' | 'contactPerson' | 'email' | 'phone'>, password: string) => {
     const passwordValidation = validatePassword(password);
     if (!passwordValidation.valid) return { success: false, error: passwordValidation.error };
     if (!supabase) return { success: false, error: 'Authentication is not configured. Add the Supabase environment variables.' };
@@ -325,15 +343,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setSupplyRequests(updated);
     localStorage.setItem('lankot_supply_requests', JSON.stringify(updated));
     const quotedRequest = updated.find((request) => request.id === requestId);
-    if (quotedRequest) {
-      void supabase?.from('supply_requests').update({
-        status: quotedRequest.status,
-        quote_line_items: quotedRequest.quoteLineItems,
-        total_quote_amount: quotedRequest.totalQuoteAmount,
-        freight_terms: quotedRequest.freightTerms,
-        admin_notes: quotedRequest.adminNotes,
-        quoted_at: quotedRequest.quotedAt
-      }).eq('id', requestId);
+    if (quotedRequest && supabase) {
+      supabase
+        .from('supply_requests')
+        .update({
+          status: quotedRequest.status,
+          quote_line_items: quotedRequest.quoteLineItems,
+          total_quote_amount: quotedRequest.totalQuoteAmount,
+          freight_terms: quotedRequest.freightTerms,
+          admin_notes: quotedRequest.adminNotes,
+          quoted_at: quotedRequest.quotedAt,
+        })
+        .eq('id', requestId)
+        .then(({ error }) => {
+          if (error) console.error('Failed to sync admin quote to Supabase:', error.message);
+        })
+        .catch((err) => console.error('Supabase quote update error:', err));
     }
   };
 
@@ -431,8 +456,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const markNotificationRead = (notificationId: string) => {
-    setNotifications((current) => current.map((notification) => notification.id === notificationId ? { ...notification, read_at: new Date().toISOString() } : notification));
-    void supabase?.from('notifications').update({ read_at: new Date().toISOString() }).eq('id', notificationId);
+    setNotifications((current) =>
+      current.map((notification) =>
+        notification.id === notificationId ? { ...notification, read_at: new Date().toISOString() } : notification
+      )
+    );
+    if (supabase) {
+      supabase
+        .from('notifications')
+        .update({ read_at: new Date().toISOString() })
+        .eq('id', notificationId)
+        .then(({ error }) => {
+          if (error) console.error('Failed to mark notification as read in Supabase:', error.message);
+        })
+        .catch((err) => console.error('Supabase notification update error:', err));
+    }
   };
 
   const removeOrder = (orderId: string) => {

@@ -1,221 +1,269 @@
 'use client';
 
-import React from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useApp } from '@/context/app-context';
 import { formatNaira } from '@/lib/currency';
-import { 
-  ArrowLeft, 
-  CheckCircle2, 
-  Clock, 
-  Truck, 
-  PackageCheck, 
-  FileText, 
-  Printer,
-  Building2,
-  MapPin,
-  ShieldCheck
-} from 'lucide-react';
+import { Badge, Card, EmptyState } from '@/components/ui';
+import { ArrowLeft, Check, CircleHelp, FileText, MapPin, PackageCheck, Printer, Truck } from 'lucide-react';
+
+const stages = [
+  ['submitted', 'Request submitted', 'Your procurement request was received.'],
+  ['approved', 'Quote approved', 'The quoted items were approved for fulfilment.'],
+  ['confirmed', 'Order confirmed', 'The order was accepted for processing.'],
+  ['processing', 'Preparing shipment', 'Items are being prepared for dispatch.'],
+  ['shipped', 'Dispatched', 'The shipment has left the fulfilment point.'],
+  ['delivered', 'Delivered', 'The order has reached its destination.'],
+] as const;
+
+function stageIndex(status: string) {
+  if (status === 'delivered') return 5;
+  if (status === 'shipped') return 4;
+  if (status === 'processing') return 3;
+  if (status === 'confirmed') return 2;
+  return 1;
+}
 
 export default function OrderDetailPage() {
   const params = useParams();
-  const { orders } = useApp();
-  const orderId = params?.id as string;
-
-  const order = orders.find(o => o.id === orderId);
+  const { orders, supplyRequests } = useApp();
+  const order = orders.find((item) => item.id === params?.id);
 
   if (!order) {
     return (
-      <div className="max-w-7xl mx-auto px-4 py-16 text-center space-y-4">
-        <h2 className="text-2xl font-bold text-slate-800">Order Not Found</h2>
-        <p className="text-slate-500 text-sm">The requested order record could not be found.</p>
-        <Link href="/orders" className="text-blue-600 font-semibold underline text-sm">
-          Return to Orders List
-        </Link>
-      </div>
+      <main className="mx-auto max-w-3xl px-4 py-16">
+        <EmptyState
+          title="Order not found"
+          description="The requested order record could not be found."
+          action={
+            <Link
+              href="/orders"
+              className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-[#173962] px-4 text-sm font-bold text-white transition-colors hover:bg-[#102a4c]"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to orders
+            </Link>
+          }
+        />
+      </main>
     );
   }
 
-  const timelineSteps = [
-    { key: 'pending', label: 'Order Submitted', desc: 'Order received & queued' },
-    { key: 'confirmed', label: 'PO Confirmed', desc: 'Credit line verified' },
-    { key: 'processing', label: 'Warehouse Pick & Pack', desc: 'Material palletization' },
-    { key: 'shipped', label: 'In Transit', desc: 'Order dispatched' },
-    { key: 'delivered', label: 'Delivered to Destination', desc: 'Dock offload complete' }
-  ];
-
-  const getStepIndex = (status: string) => {
-    switch (status) {
-      case 'delivered': return 4;
-      case 'shipped': return 3;
-      case 'processing': return 2;
-      case 'confirmed': return 1;
-      default: return 0;
-    }
-  };
-
-  const currentStepIndex = getStepIndex(order.status);
+  const request = supplyRequests.find((item) => item.id === order.requestId);
+  const activeStage = stageIndex(order.status);
+  const expectedDelivery = order.status === 'delivered' ? order.updatedAt : request?.targetDeliveryDate || 'In coordination';
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
-      
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-6">
-        <div>
-          <Link href="/orders" className="text-xs font-semibold text-blue-600 hover:underline flex items-center gap-1 mb-2">
-            <ArrowLeft className="w-3.5 h-3.5" /> Back to Order History
-          </Link>
-          <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
-              Order {order.orderNumber}
-            </h1>
-          </div>
-          <p className="text-xs text-slate-400 mt-1">
-            PO #: <span className="font-semibold text-slate-700">{order.poNumber}</span> • Invoice: <span className="font-semibold text-slate-700">{order.invoiceNumber ?? '—'}</span>
-          </p>
-        </div>
-
-        <button
-          onClick={() => window.print()}
-          className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-4 py-2.5 rounded-xl text-xs flex items-center gap-2 border border-slate-200 self-start sm:self-auto"
+    <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
+      {/* Header Banner */}
+      <header className="mb-8 border-b border-[#e2e8f0] pb-6">
+        <Link
+          href="/orders"
+          className="mb-3 inline-flex items-center gap-1 text-xs font-semibold text-[#173962] transition-colors hover:text-[#0b8f55]"
         >
-          <Printer className="w-4 h-4" /> Print Commercial Invoice
-        </button>
-      </div>
-
-      {/* Visual Status Timeline Progress Bar */}
-      <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 space-y-6 shadow-sm">
-        <h3 className="font-extrabold text-lg text-slate-900 flex items-center gap-2">
-          <Truck className="w-5 h-5 text-blue-600" /> Supply Chain Timeline
-        </h3>
-
-        <div className="relative">
-          <div className="grid grid-cols-1 sm:grid-cols-5 gap-4 relative z-10">
-            {timelineSteps.map((step, idx) => {
-              const isCompleted = idx <= currentStepIndex;
-              const isCurrent = idx === currentStepIndex;
-
-              return (
-                <div
-                  key={step.key}
-                  className={`p-4 rounded-2xl border transition-all ${
-                    isCurrent
-                      ? 'bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-600/30'
-                      : isCompleted
-                      ? 'bg-emerald-50 text-emerald-900 border-emerald-200'
-                      : 'bg-slate-50 text-slate-400 border-slate-200'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10px] font-bold uppercase tracking-wider opacity-80">Step 0{idx + 1}</span>
-                    {isCompleted && <CheckCircle2 className="w-4 h-4" />}
-                  </div>
-                  <h4 className="font-bold text-sm leading-tight">{step.label}</h4>
-                  <p className="text-[11px] mt-1 opacity-80">{step.desc}</p>
-                </div>
-              );
-            })}
+          <ArrowLeft className="h-3.5 w-3.5" />
+          Back to orders
+        </Link>
+        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider text-[#0b8f55]">Order fulfilment detail</p>
+            <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-[#0f172a] sm:text-3xl">
+              {order.orderNumber}
+            </h1>
+            <p className="mt-1 text-sm text-[#64748b]">
+              PO Number: <span className="font-semibold text-[#0f172a]">{order.poNumber}</span> &middot; Created on {order.createdAt}
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <Badge tone={order.status === 'delivered' ? 'success' : order.status === 'shipped' ? 'info' : 'warning'}>
+              {order.status === 'delivered' ? 'Delivered' : order.status === 'shipped' ? 'Dispatched' : 'Processing'}
+            </Badge>
+            {order.invoiceNumber && (
+              <button
+                type="button"
+                onClick={() => window.print()}
+                className="inline-flex min-h-9 items-center gap-2 rounded-lg border border-[#e2e8f0] bg-white px-3.5 text-xs font-bold text-[#173962] shadow-sm hover:bg-[#f8fafc]"
+              >
+                <Printer className="h-3.5 w-3.5" />
+                Print invoice
+              </button>
+            )}
           </div>
         </div>
+      </header>
 
+      {/* Order Progress Stepper */}
+      <Card className="mb-8 p-6 sm:p-8">
+        <div className="mb-6 flex items-start justify-between gap-4">
+          <div>
+            <h2 className="text-base font-bold text-[#0f172a]">Fulfilment Stepper</h2>
+            <p className="mt-0.5 text-xs text-[#64748b]">Track live progress across operational procurement checkpoints.</p>
+          </div>
+          <Truck className="h-5 w-5 text-[#173962]" />
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+          {stages.map(([key, label, description], index) => {
+            const completed = index < activeStage;
+            const current = index === activeStage;
+            return (
+              <div
+                key={key}
+                className={`rounded-xl border p-4 transition-colors ${
+                  current
+                    ? 'border-[#173962] bg-[#173962] text-white'
+                    : completed
+                    ? 'border-[#0b8f55]/30 bg-[#f0fdf4] text-[#087443]'
+                    : 'border-[#e2e8f0] bg-[#f8fafc] text-[#94a3b8]'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold uppercase tracking-wider">Step {index + 1}</span>
+                  {completed ? (
+                    <Check className="h-4 w-4 text-[#087443]" />
+                  ) : current ? (
+                    <PackageCheck className="h-4 w-4 text-[#8ee0b2]" />
+                  ) : (
+                    <span className="h-3 w-3 rounded-full border border-current" />
+                  )}
+                </div>
+                <h3 className="mt-3 text-xs font-bold leading-tight">{label}</h3>
+                <p className="mt-1 text-[11px] leading-relaxed opacity-80">{description}</p>
+              </div>
+            );
+          })}
+        </div>
         {order.trackingNumber && (
-          <div className="bg-blue-50 p-4 rounded-2xl border border-blue-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
-            <span className="font-bold text-blue-950 flex items-center gap-2">
-              <Truck className="w-4 h-4 text-blue-600" /> Tracking reference: <span className="font-mono">{order.trackingNumber}</span>
+          <div className="mt-6 flex flex-col gap-2 rounded-xl border border-[#173962]/20 bg-[#f1f5f9] px-4 py-3.5 text-xs text-[#173962] sm:flex-row sm:items-center sm:justify-between">
+            <span className="flex items-center gap-2 font-semibold">
+              <Truck className="h-4 w-4 text-[#0b8f55]" />
+              Waybill / Tracking Reference: <span className="font-mono font-bold">{order.trackingNumber}</span>
             </span>
-            <span className="text-blue-700">Estimated Dispatch Arrival: <strong className="text-blue-950">Next Business Day 10:00 AM</strong></span>
+            <span className="text-[11px] text-[#64748b]">Provide this reference to account support for dispatch queries.</span>
           </div>
         )}
-      </div>
+      </Card>
 
-      {/* Main Order Details Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        
-        {/* Line Items Breakdown */}
-        <div className="lg:col-span-8 space-y-6">
-          <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 space-y-6 shadow-sm">
-            <h3 className="font-extrabold text-lg text-slate-900 border-b border-slate-100 pb-3">
-              Order Items Breakdown
-            </h3>
-
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 text-slate-500 uppercase font-semibold border-y border-slate-100">
-                <tr>
-                  <th className="p-3">SKU</th>
-                  <th className="p-3">Description</th>
-                  <th className="p-3">Qty</th>
-                  <th className="p-3">Unit Price</th>
-                  <th className="p-3 text-right">Subtotal</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {order.items.map((item, idx) => (
-                  <tr key={idx}>
-                    <td className="p-3 font-bold text-slate-900">{item.itemName}</td>
-                    <td className="p-3 font-medium text-slate-800">{item.productName ?? item.itemName}</td>
-                    <td className="p-3 font-bold text-slate-900">{item.quantity} {item.unit}</td>
-                    <td className="p-3 text-slate-600">{formatNaira(item.unitPrice)}</td>
-                    <td className="p-3 text-right font-bold text-slate-900">{formatNaira(item.quantity * item.unitPrice)}</td>
+      {/* Detail Grid */}
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="space-y-8">
+          {/* Order Items Table */}
+          <Card className="overflow-hidden">
+            <div className="border-b border-[#e2e8f0] px-6 py-4">
+              <h2 className="text-base font-bold text-[#0f172a]">Commercial Line Items</h2>
+              <p className="mt-0.5 text-xs text-[#64748b]">{order.items.length} item(s) included in this order</p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="border-b border-[#e2e8f0] bg-[#f8fafc] text-[10px] uppercase tracking-wider text-[#64748b]">
+                  <tr>
+                    <th className="px-6 py-3">Description</th>
+                    <th className="px-4 py-3">Quantity</th>
+                    <th className="px-4 py-3">Unit Price</th>
+                    <th className="px-6 py-3 text-right">Subtotal</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-
-            <div className="pt-4 border-t border-slate-100 flex flex-col items-end space-y-1 text-xs">
-              <div className="flex justify-between w-64 text-slate-500">
-                <span>Subtotal:</span>
-                <span className="font-bold text-slate-800">{formatNaira(order.totalAmount)}</span>
-              </div>
-              <div className="flex justify-between w-64 text-slate-500">
-                <span>Freight Logistics:</span>
-                <span className="font-bold text-emerald-700">INCLUDED SLA</span>
-              </div>
-              <div className="flex justify-between w-64 text-slate-900 text-sm font-extrabold pt-2 border-t border-slate-200">
-                <span>Total Invoice:</span>
-                <span className="text-blue-600">{formatNaira(order.totalAmount)}</span>
+                </thead>
+                <tbody className="divide-y divide-[#e2e8f0]">
+                  {order.items.map((item) => (
+                    <tr key={item.id} className="hover:bg-[#f8fafc]">
+                      <td className="px-6 py-4">
+                        <p className="font-bold text-[#0f172a]">{item.itemName}</p>
+                        <p className="mt-0.5 text-[11px] text-[#64748b]">{item.productName || item.itemName}</p>
+                      </td>
+                      <td className="px-4 py-4 font-semibold text-[#334155]">
+                        {item.quantity} {item.unit}
+                      </td>
+                      <td className="px-4 py-4 text-[#64748b]">{formatNaira(item.unitPrice)}</td>
+                      <td className="px-6 py-4 text-right font-bold text-[#0f172a]">
+                        {formatNaira(item.quantity * item.unitPrice)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="flex justify-end border-t border-[#e2e8f0] bg-[#f8fafc]/50 px-6 py-5">
+              <div className="w-full max-w-xs space-y-2 text-xs">
+                <div className="flex justify-between text-[#64748b]">
+                  <span>Subtotal</span>
+                  <span>{formatNaira(order.totalAmount)}</span>
+                </div>
+                <div className="flex justify-between text-[#64748b]">
+                  <span>Logistics & Handling</span>
+                  <span className="font-semibold text-[#087443]">Included</span>
+                </div>
+                <div className="flex justify-between border-t border-[#e2e8f0] pt-2 text-sm font-extrabold text-[#0f172a]">
+                  <span>Total Amount</span>
+                  <span>{formatNaira(order.totalAmount)}</span>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
+          </Card>
 
-        {/* Shipping & Account Summary */}
-        <div className="lg:col-span-4 space-y-6">
-          <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 space-y-4 shadow-sm">
-            <h3 className="font-bold text-base text-slate-900 border-b border-slate-100 pb-3">
-              Shipping & Account Details
-            </h3>
-
-            <div className="space-y-4 text-xs text-slate-600">
+          {/* References Card */}
+          <Card className="p-6">
+            <div className="flex items-start gap-3">
+              <FileText className="h-5 w-5 shrink-0 text-[#0b8f55]" />
               <div>
-                <span className="font-bold text-slate-800 block mb-1 flex items-center gap-1">
-                  <Building2 className="w-3.5 h-3.5 text-blue-600" /> B2B Account
-                </span>
-                <p className="font-semibold text-slate-900">{order.clientCompany}</p>
-                <p>{order.clientContact}</p>
-                <p>{order.email}</p>
-              </div>
-
-              <div>
-                <span className="font-bold text-slate-800 block mb-1 flex items-center gap-1">
-                  <MapPin className="w-3.5 h-3.5 text-blue-600" /> Delivery Address
-                </span>
-                <p className="text-slate-800">{order.shippingAddress}</p>
-              </div>
-
-              <div>
-                <span className="font-bold text-slate-800 block mb-1 flex items-center gap-1">
-                  <ShieldCheck className="w-3.5 h-3.5 text-blue-600" /> Payment & Credit Terms
-                </span>
-                <p className="text-slate-800">Corporate Net 30 Credit Account</p>
-                <p className="text-slate-400 text-[11px]">Invoice issued upon dispatch</p>
+                <h2 className="text-base font-bold text-[#0f172a]">Commercial References</h2>
+                <p className="mt-0.5 text-xs text-[#64748b]">Linked accounting and purchase documentation.</p>
+                <div className="mt-4 grid gap-4 text-xs sm:grid-cols-2">
+                  <div>
+                    <span className="block text-[11px] uppercase tracking-wider text-[#64748b]">Purchase Order</span>
+                    <strong className="mt-1 block text-sm font-bold text-[#0f172a]">{order.poNumber}</strong>
+                  </div>
+                  <div>
+                    <span className="block text-[11px] uppercase tracking-wider text-[#64748b]">Invoice Number</span>
+                    <strong className="mt-1 block text-sm font-bold text-[#0f172a]">
+                      {order.invoiceNumber || 'Pending Issuance'}
+                    </strong>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
+          </Card>
         </div>
 
+        {/* Sidebar Info */}
+        <aside className="space-y-6">
+          <Card className="p-6">
+            <h2 className="text-base font-bold text-[#0f172a]">Delivery Dock Details</h2>
+            <div className="mt-4 space-y-4 text-xs">
+              <div className="flex items-start gap-3">
+                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[#0b8f55]" />
+                <div>
+                  <span className="block text-[11px] uppercase tracking-wider text-[#64748b]">Shipping Address</span>
+                  <strong className="mt-1 block text-xs font-semibold text-[#334155] leading-relaxed">
+                    {order.shippingAddress}
+                  </strong>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <PackageCheck className="mt-0.5 h-4 w-4 shrink-0 text-[#0b8f55]" />
+                <div>
+                  <span className="block text-[11px] uppercase tracking-wider text-[#64748b]">Target Delivery</span>
+                  <strong className="mt-1 block text-xs font-semibold text-[#334155]">
+                    {expectedDelivery}
+                  </strong>
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="p-6">
+            <h2 className="text-base font-bold text-[#0f172a]">Account Support</h2>
+            <p className="mt-2 text-xs leading-relaxed text-[#64748b]">
+              Have questions regarding dispatch schedules, inspection records, or accounting documents?
+            </p>
+            <Link
+              href="/contact"
+              className="mt-4 inline-flex items-center gap-2 text-xs font-bold text-[#087443] hover:underline"
+            >
+              Contact Account Officer <CircleHelp className="h-4 w-4" />
+            </Link>
+          </Card>
+        </aside>
       </div>
-
-    </div>
+    </main>
   );
 }
+

@@ -1,8 +1,17 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --navy-950: #0b1f3a;
+  --navy-900: #102a4c;
+  --navy-800: #173962;
+  --green-700: #087443;
+  --green-600: #0b8f55;
+  --green-50: #edf9f2;
+  --line: #e2e8f0;
+  --muted: #64748b;
+  --surface: #ffffff;
   color-scheme: light;
 }
 
@@ -16,7 +25,36 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  min-width: 320px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background: #bdebd2;
+  color: var(--navy-950);
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid #0b8f55;
+  outline-offset: 2px;
+}
+
+button:disabled:focus-visible {
+  outline-color: #94a3b8;
 }
 
 input,
@@ -24,10 +62,46 @@ select,
 textarea {
   color: #0f172a;
   color-scheme: light;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
 }
 
 input::placeholder,
 textarea::placeholder {
-  color: #64748b;
+  color: #94a3b8;
   opacity: 1;
 }
+
+input:not([type='checkbox']):not([type='radio']),
+select,
+textarea {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+input:not([type='checkbox']):not([type='radio']):focus,
+select:focus,
+textarea:focus {
+  border-color: var(--green-600);
+  box-shadow: 0 0 0 3px rgba(11, 143, 85, 0.12);
+  outline: none;
+}
+
+table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+th {
+  letter-spacing: 0.05em;
+}
+
+.shadow-sm {
+  box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.05) !important;
+}
+
+.shadow-md {
+  box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.06), 0 2px 4px -2px rgba(15, 23, 42, 0.04) !important;
+}
+
