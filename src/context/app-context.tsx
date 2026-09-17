@@ -344,6 +344,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem('lankot_supply_requests', JSON.stringify(updated));
     const quotedRequest = updated.find((request) => request.id === requestId);
     if (quotedRequest && supabase) {
+      Promise.resolve(
       supabase
         .from('supply_requests')
         .update({
@@ -355,6 +356,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           quoted_at: quotedRequest.quotedAt,
         })
         .eq('id', requestId)
+      )
         .then(({ error }) => {
           if (error) console.error('Failed to sync admin quote to Supabase:', error.message);
         })
@@ -462,10 +464,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       )
     );
     if (supabase) {
+      Promise.resolve(
       supabase
         .from('notifications')
         .update({ read_at: new Date().toISOString() })
         .eq('id', notificationId)
+      )
         .then(({ error }) => {
           if (error) console.error('Failed to mark notification as read in Supabase:', error.message);
         })
