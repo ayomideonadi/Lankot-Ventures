@@ -92,7 +92,7 @@ export default function ContactPage() {
                       id="contact-name"
                       type="text"
                       required
-                      placeholder="e.g. Sarah Jenkins"
+                      placeholder="e.g. Toyin Onadi"
                       value={form.name}
                       onChange={(e) => setForm({ ...form, name: e.target.value })}
                       className="w-full p-3 bg-[#f8fafc] border border-[#e2e8f0] rounded-lg text-sm"
@@ -105,7 +105,7 @@ export default function ContactPage() {
                       id="contact-company"
                       type="text"
                       required
-                      placeholder="e.g. Apex Business Inc."
+                      placeholder="e.g. Lankot Ventures."
                       value={form.company}
                       onChange={(e) => setForm({ ...form, company: e.target.value })}
                       className="w-full p-3 bg-[#f8fafc] border border-[#e2e8f0] rounded-lg text-sm"
@@ -119,7 +119,7 @@ export default function ContactPage() {
                     id="contact-email"
                     type="email"
                     required
-                    placeholder="name@company.com"
+                    placeholder="lankotventures@gmail.com"
                     value={form.email}
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
                     className="w-full p-3 bg-[#f8fafc] border border-[#e2e8f0] rounded-lg text-sm"
