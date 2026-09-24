@@ -43,6 +43,25 @@ export default function RequestDetailPage() {
 
   const description = request.items.map((item) => item.itemName).join(', ') || request.generalNotes || 'Procurement request';
 
+  const displayItems: {
+    id: string;
+    itemName: string;
+    productName?: string;
+    quantity: number;
+    unit: string;
+    unitPrice: number;
+    lineTotal: number;
+  }[] = request.quoteLineItems?.length
+    ? request.quoteLineItems
+    : request.items.map((item) => ({
+        id: item.id,
+        itemName: item.itemName,
+        quantity: item.quantity,
+        unit: item.unit,
+        unitPrice: 0,
+        lineTotal: 0,
+      }));
+
   return (
     <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
       <header className="mb-8 border-b border-[#e2e8f0] pb-6">
@@ -108,18 +127,11 @@ export default function RequestDetailPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#e2e8f0]">
-                  {(request.quoteLineItems?.length ? request.quoteLineItems : request.items.map((item) => ({
-                    id: item.id,
-                    itemName: item.itemName,
-                    quantity: item.quantity,
-                    unit: item.unit,
-                    unitPrice: 0,
-                    lineTotal: 0,
-                  }))).map((item) => (
+                  {displayItems.map((item) => (
                     <tr key={item.id} className="hover:bg-[#f8fafc]">
                       <td className="px-6 py-4">
                         <p className="font-bold text-[#0f172a]">{item.itemName}</p>
-                        {'productName' in item && item.productName ? (
+                        {item.productName ? (
                           <p className="mt-0.5 text-[11px] text-[#64748b]">{item.productName}</p>
                         ) : null}
                       </td>
