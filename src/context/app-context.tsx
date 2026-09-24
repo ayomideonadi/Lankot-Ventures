@@ -42,7 +42,7 @@ interface AppContextType {
   savedLists: LegacySavedList[];
   // Actions
   submitSupplyRequest: (items: Omit<ClientItemDrop, 'id'>[], targetDeliveryDate: string, generalNotes?: string) => Promise<SupplyRequest>;
-  removeSupplyRequest: (requestId: string) => void;
+  removeSupplyRequest: (requestId: string) => Promise<void>;
   submitAdminQuote: (requestId: string, quoteItems: { itemId: string; unitPrice: number }[], freightTerms: string, adminNotes?: string) => void;
   clearAdminQuote: (requestId: string) => void;
   acceptQuoteAndOrder: (requestId: string, poNumber: string, shippingAddress: string) => Order;
@@ -297,10 +297,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return newReq;
   };
 
-  const removeSupplyRequest = (requestId: string) => {
+  const removeSupplyRequest = async (requestId: string) => {
+    const previous = supplyRequests;
     const updated = supplyRequests.filter((request) => request.id !== requestId);
     setSupplyRequests(updated);
     localStorage.setItem('lankot_supply_requests', JSON.stringify(updated));
+
+    if (!supabase) return;
+
+    const { error } = await supabase.from('supply_requests').delete().eq('id', requestId);
+    if (!error) return;
+
+    setSupplyRequests(previous);
+    localStorage.setItem('lankot_supply_requests', JSON.stringify(previous));
+    throw new Error(`Unable to remove request: ${error.message}`);
   };
 
   const submitAdminQuote = (

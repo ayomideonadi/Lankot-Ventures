@@ -10,7 +10,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 const navigation = [
   { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { label: 'Requests', href: '/rfq', icon: ClipboardList },
+  { label: 'Requests', href: '/requests', icon: ClipboardList },
   { label: 'Quotes', href: '/dashboard', icon: FileCheck2 },
   { label: 'Orders', href: '/orders', icon: ShoppingCart },
   { label: 'Tracking', href: '/orders', icon: Truck },
@@ -222,7 +222,7 @@ export default function ClientDashboardPage() {
                 <h2 className="text-base font-bold text-[#0f172a]">Recent requests</h2>
                 <p className="mt-0.5 text-xs text-[#64748b]">Track requests from intake through quote approval.</p>
               </div>
-              <Link href="/rfq" className="hidden items-center gap-1 text-xs font-bold text-[#087443] sm:flex hover:underline">
+              <Link href="/requests" className="hidden items-center gap-1 text-xs font-bold text-[#087443] sm:flex hover:underline">
                 View all requests <ChevronRight className="h-3.5 w-3.5" />
               </Link>
             </div>
@@ -266,7 +266,7 @@ export default function ClientDashboardPage() {
                                 Approve quote
                               </button>
                             ) : (
-                              <Link href="/rfq" className="text-xs font-bold text-[#173962] hover:underline">
+                              <Link href={`/requests/${request.id}`} className="text-xs font-bold text-[#173962] hover:underline">
                                 View request
                               </Link>
                             )}
@@ -295,7 +295,7 @@ export default function ClientDashboardPage() {
                           Approve quote
                         </button>
                       ) : (
-                        <Link href="/rfq" className="text-xs font-bold text-[#173962]">
+                        <Link href={`/requests/${request.id}`} className="text-xs font-bold text-[#173962]">
                           View request
                         </Link>
                       )}
@@ -323,7 +323,7 @@ export default function ClientDashboardPage() {
                   title={searchTerm ? 'No matching orders' : 'No orders yet'}
                   description="Approved quotes will appear here as trackable orders."
                   action={
-                    <Button tone="secondary" onClick={() => router.push('/rfq')}>
+                    <Button tone="secondary" onClick={() => router.push('/requests')}>
                       <BookOpen className="h-4 w-4" />Browse requests
                     </Button>
                   }

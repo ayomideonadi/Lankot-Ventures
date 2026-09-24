@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useApp } from '@/context/app-context';
 
-const clientPaths = ['/dashboard', '/orders', '/rfq', '/saved-lists', '/settings'];
+const clientPaths = ['/dashboard', '/orders', '/requests', '/rfq', '/saved-lists', '/settings'];
 const adminPaths = ['/admin'];
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {

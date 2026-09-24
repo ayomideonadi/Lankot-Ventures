@@ -29,7 +29,7 @@ create table if not exists public.supply_requests (
   quoted_at date
 );
 
-grant select, insert, update on table public.supply_requests to authenticated;
+grant select, insert, update, delete on table public.supply_requests to authenticated;
 
 alter table public.supply_requests enable row level security;
 
@@ -54,6 +54,12 @@ create policy "Admins can update requests"
   to authenticated
   using (lower(auth.jwt() ->> 'email') = 'lankotventures01@gmail.com')
   with check (lower(auth.jwt() ->> 'email') = 'lankotventures01@gmail.com');
+
+drop policy if exists "Admins can delete requests" on public.supply_requests;
+create policy "Admins can delete requests"
+  on public.supply_requests for delete
+  to authenticated
+  using (lower(auth.jwt() ->> 'email') = 'lankotventures01@gmail.com');
 
 create index if not exists notifications_recipient_created_idx
   on public.notifications (lower(recipient_email), created_at desc);

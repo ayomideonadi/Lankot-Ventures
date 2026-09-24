@@ -14,7 +14,7 @@ const publicLinks = [
 
 const clientLinks = [
   { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { label: 'Requests', href: '/rfq', icon: FileCheck2 },
+  { label: 'Requests', href: '/requests', icon: FileCheck2 },
   { label: 'Saved Templates', href: '/saved-lists', icon: Bookmark },
   { label: 'Orders', href: '/orders', icon: ShoppingCart },
   { label: 'Support', href: '/contact', icon: UserRound },
